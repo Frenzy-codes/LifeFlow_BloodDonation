@@ -1,4 +1,5 @@
 
+import { useState } from "react";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -14,7 +15,9 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Link } from "react-router-dom";
-import { toast } from "sonner";
+import { useAuth } from "@/contexts/AuthContext";
+import { AlertCircle, Loader2 } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 const formSchema = z.object({
   email: z.string().email({
@@ -26,6 +29,9 @@ const formSchema = z.object({
 });
 
 const Login = () => {
+  const { signIn, isLoading } = useAuth();
+  const [error, setError] = useState<string | null>(null);
+
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -34,11 +40,13 @@ const Login = () => {
     },
   });
 
-  function onSubmit(values: z.infer<typeof formSchema>) {
-    // In a real app, this would authenticate with Firebase
-    console.log(values);
-    toast.success("Login successful!");
-    // Here we would navigate to a dashboard page
+  async function onSubmit(values: z.infer<typeof formSchema>) {
+    try {
+      setError(null);
+      await signIn(values.email, values.password);
+    } catch (error: any) {
+      setError(error.message || "Failed to login");
+    }
   }
 
   return (
@@ -50,6 +58,12 @@ const Login = () => {
             <CardDescription>Enter your credentials to access your account</CardDescription>
           </CardHeader>
           <CardContent>
+            {error && (
+              <Alert variant="destructive" className="mb-6">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
+            )}
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
                 <FormField
@@ -78,8 +92,19 @@ const Login = () => {
                     </FormItem>
                   )}
                 />
-                <Button type="submit" className="w-full bg-blood hover:bg-blood-hover">
-                  Login
+                <Button 
+                  type="submit" 
+                  className="w-full bg-blood hover:bg-blood-hover" 
+                  disabled={isLoading}
+                >
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" /> 
+                      Logging in...
+                    </>
+                  ) : (
+                    "Login"
+                  )}
                 </Button>
               </form>
             </Form>

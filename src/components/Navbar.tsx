@@ -1,11 +1,19 @@
 
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
-import { Heart, Menu, X, LogIn, UserPlus } from 'lucide-react';
+import { Heart, Menu, X, LogIn, UserPlus, LogOut, User } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
+  const { user, signOut } = useAuth();
+  const navigate = useNavigate();
+
+  const handleLogout = async () => {
+    await signOut();
+    navigate('/login');
+  };
 
   return (
     <nav className="bg-white border-b border-gray-100 shadow-sm fixed w-full z-10">
@@ -24,18 +32,38 @@ const Navbar = () => {
             </div>
           </div>
           <div className="hidden md:flex items-center gap-4">
-            <Button variant="outline" className="border-blood text-blood hover:bg-blood hover:text-white" asChild>
-              <Link to="/login">
-                <LogIn className="mr-2 h-4 w-4" />
-                Login
-              </Link>
-            </Button>
-            <Button className="bg-blood hover:bg-blood-hover text-white" asChild>
-              <Link to="/register">
-                <UserPlus className="mr-2 h-4 w-4" />
-                Register
-              </Link>
-            </Button>
+            {user ? (
+              <>
+                <Button variant="outline" className="border-blood text-blood hover:bg-blood hover:text-white" asChild>
+                  <Link to="/profile">
+                    <User className="mr-2 h-4 w-4" />
+                    Profile
+                  </Link>
+                </Button>
+                <Button 
+                  className="bg-blood hover:bg-blood-hover text-white" 
+                  onClick={handleLogout}
+                >
+                  <LogOut className="mr-2 h-4 w-4" />
+                  Logout
+                </Button>
+              </>
+            ) : (
+              <>
+                <Button variant="outline" className="border-blood text-blood hover:bg-blood hover:text-white" asChild>
+                  <Link to="/login">
+                    <LogIn className="mr-2 h-4 w-4" />
+                    Login
+                  </Link>
+                </Button>
+                <Button className="bg-blood hover:bg-blood-hover text-white" asChild>
+                  <Link to="/register">
+                    <UserPlus className="mr-2 h-4 w-4" />
+                    Register
+                  </Link>
+                </Button>
+              </>
+            )}
           </div>
           <div className="flex items-center md:hidden">
             <button
@@ -84,18 +112,42 @@ const Navbar = () => {
             Request Blood
           </Link>
           <div className="pt-4 flex flex-col space-y-3">
-            <Button variant="outline" className="border-blood text-blood" size="sm" asChild>
-              <Link to="/login">
-                <LogIn className="mr-2 h-4 w-4" />
-                Login
-              </Link>
-            </Button>
-            <Button className="bg-blood hover:bg-blood-hover text-white" size="sm" asChild>
-              <Link to="/register">
-                <UserPlus className="mr-2 h-4 w-4" />
-                Register
-              </Link>
-            </Button>
+            {user ? (
+              <>
+                <Button variant="outline" className="border-blood text-blood" size="sm" asChild>
+                  <Link to="/profile" onClick={() => setIsOpen(false)}>
+                    <User className="mr-2 h-4 w-4" />
+                    Profile
+                  </Link>
+                </Button>
+                <Button 
+                  className="bg-blood hover:bg-blood-hover text-white" 
+                  size="sm"
+                  onClick={() => {
+                    handleLogout();
+                    setIsOpen(false);
+                  }}
+                >
+                  <LogOut className="mr-2 h-4 w-4" />
+                  Logout
+                </Button>
+              </>
+            ) : (
+              <>
+                <Button variant="outline" className="border-blood text-blood" size="sm" asChild>
+                  <Link to="/login" onClick={() => setIsOpen(false)}>
+                    <LogIn className="mr-2 h-4 w-4" />
+                    Login
+                  </Link>
+                </Button>
+                <Button className="bg-blood hover:bg-blood-hover text-white" size="sm" asChild>
+                  <Link to="/register" onClick={() => setIsOpen(false)}>
+                    <UserPlus className="mr-2 h-4 w-4" />
+                    Register
+                  </Link>
+                </Button>
+              </>
+            )}
           </div>
         </div>
       </div>

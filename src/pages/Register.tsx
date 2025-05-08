@@ -1,4 +1,5 @@
 
+import { useState } from "react";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -21,8 +22,10 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Link } from "react-router-dom";
-import { toast } from "sonner";
 import { Checkbox } from "@/components/ui/checkbox";
+import { useAuth } from "@/contexts/AuthContext";
+import { AlertCircle, Loader2 } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 const formSchema = z.object({
   fullName: z.string().min(2, {
@@ -49,6 +52,9 @@ const formSchema = z.object({
 });
 
 const Register = () => {
+  const { signUp, isLoading } = useAuth();
+  const [error, setError] = useState<string | null>(null);
+  
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -60,11 +66,20 @@ const Register = () => {
     },
   });
 
-  function onSubmit(values: z.infer<typeof formSchema>) {
-    // In a real app, this would register with Firebase
-    console.log(values);
-    toast.success("Registration successful! Please check your email to verify your account.");
-    // Here we would navigate to a login page or onboarding flow
+  async function onSubmit(values: z.infer<typeof formSchema>) {
+    try {
+      setError(null);
+      const userData = {
+        full_name: values.fullName,
+        phone_number: values.phoneNumber,
+        blood_type: values.bloodType,
+        date_of_birth: values.dateOfBirth,
+      };
+      
+      await signUp(values.email, values.password, userData);
+    } catch (error: any) {
+      setError(error.message || "An error occurred during registration");
+    }
   }
 
   return (
@@ -76,6 +91,12 @@ const Register = () => {
             <CardDescription>Join our community of lifesavers</CardDescription>
           </CardHeader>
           <CardContent>
+            {error && (
+              <Alert variant="destructive" className="mb-6">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
+            )}
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -208,8 +229,19 @@ const Register = () => {
                   )}
                 />
 
-                <Button type="submit" className="w-full bg-blood hover:bg-blood-hover">
-                  Register
+                <Button 
+                  type="submit" 
+                  className="w-full bg-blood hover:bg-blood-hover"
+                  disabled={isLoading}
+                >
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" /> 
+                      Registering...
+                    </>
+                  ) : (
+                    "Register"
+                  )}
                 </Button>
               </form>
             </Form>

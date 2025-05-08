@@ -1,6 +1,7 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
+import { cn } from "@/lib/utils";
 
 type BloodType = "A+" | "A-" | "B+" | "B-" | "AB+" | "AB-" | "O+" | "O-";
 
@@ -49,8 +50,11 @@ const BloodStatsCard = () => {
                 </div>
                 <Progress 
                   value={percentage} 
-                  className="h-2" 
-                  indicatorClassName={getProgressColor(percentage)}
+                  className="h-2"
+                  // Fix: Use className with cn utility instead of indicatorClassName
+                  classNames={{
+                    indicator: cn(getProgressColor(percentage))
+                  }}
                 />
                 <div className="text-xs text-gray-500 text-right">
                   {percentage}% of capacity
