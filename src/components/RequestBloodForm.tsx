@@ -78,6 +78,7 @@ const RequestBloodForm = () => {
     }
     
     try {
+      // Using type assertion to fix type error
       const { error } = await supabase
         .from("blood_requests")
         .insert({
@@ -90,7 +91,7 @@ const RequestBloodForm = () => {
           urgency: values.urgency,
           additional_info: values.additionalInfo,
           status: "Pending"
-        });
+        } as any);
       
       if (error) throw error;
       

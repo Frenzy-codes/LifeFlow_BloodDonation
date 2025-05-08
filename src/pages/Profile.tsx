@@ -51,7 +51,7 @@ const Profile = () => {
       if (data) {
         setFullName(data.full_name || "");
         setPhoneNumber(data.phone_number || "");
-        setDateOfBirth(data.date_of_birth ? new Date(data.date_of_birth).toISOString().split('T')[0] : "");
+        setDateOfBirth(data.date_of_birth ? data.date_of_birth.toString() : "");
         setBloodType(data.blood_type || "");
       }
     } catch (error) {
@@ -73,7 +73,7 @@ const Profile = () => {
           phone_number: phoneNumber,
           date_of_birth: dateOfBirth || null,
           blood_type: bloodType || null,
-          updated_at: new Date()
+          updated_at: new Date().toISOString()
         })
         .eq("id", user?.id);
 

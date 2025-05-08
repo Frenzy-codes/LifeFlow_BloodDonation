@@ -9,6 +9,84 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      appointments: {
+        Row: {
+          created_at: string | null
+          date: string
+          id: string
+          location: string
+          status: string
+          time: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          date: string
+          id?: string
+          location: string
+          status?: string
+          time: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          date?: string
+          id?: string
+          location?: string
+          status?: string
+          time?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      blood_requests: {
+        Row: {
+          additional_info: string | null
+          blood_type: string
+          contact_number: string
+          created_at: string | null
+          full_name: string
+          hospital: string
+          id: string
+          status: string
+          units_needed: number
+          updated_at: string | null
+          urgency: string
+          user_id: string
+        }
+        Insert: {
+          additional_info?: string | null
+          blood_type: string
+          contact_number: string
+          created_at?: string | null
+          full_name: string
+          hospital: string
+          id?: string
+          status?: string
+          units_needed: number
+          updated_at?: string | null
+          urgency: string
+          user_id: string
+        }
+        Update: {
+          additional_info?: string | null
+          blood_type?: string
+          contact_number?: string
+          created_at?: string | null
+          full_name?: string
+          hospital?: string
+          id?: string
+          status?: string
+          units_needed?: number
+          updated_at?: string | null
+          urgency?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           blood_type: string | null
