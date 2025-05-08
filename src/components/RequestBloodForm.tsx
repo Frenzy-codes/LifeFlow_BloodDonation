@@ -22,6 +22,10 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
+import { useNavigate } from "react-router-dom";
+import { useEffect } from "react";
 
 const formSchema = z.object({
   fullName: z.string().min(2, {
@@ -46,6 +50,16 @@ const formSchema = z.object({
 });
 
 const RequestBloodForm = () => {
+  const { user, isLoading: authLoading } = useAuth();
+  const navigate = useNavigate();
+  
+  useEffect(() => {
+    if (!user && !authLoading) {
+      toast.error("Please log in to request blood");
+      navigate("/login");
+    }
+  }, [user, authLoading, navigate]);
+  
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -57,13 +71,37 @@ const RequestBloodForm = () => {
     },
   });
 
-  function onSubmit(values: z.infer<typeof formSchema>) {
-    // In a real app, this would send the data to an API
-    console.log(values);
-    toast.success("Blood request submitted successfully!", {
-      description: "We will notify matching donors about your request.",
-    });
-    form.reset();
+  async function onSubmit(values: z.infer<typeof formSchema>) {
+    if (!user) {
+      toast.error("You must be logged in to submit a request");
+      return;
+    }
+    
+    try {
+      const { error } = await supabase
+        .from("blood_requests")
+        .insert({
+          user_id: user.id,
+          full_name: values.fullName,
+          contact_number: values.contactNumber,
+          blood_type: values.bloodType,
+          units_needed: parseInt(values.unitsNeeded),
+          hospital: values.hospital,
+          urgency: values.urgency,
+          additional_info: values.additionalInfo,
+          status: "Pending"
+        });
+      
+      if (error) throw error;
+      
+      toast.success("Blood request submitted successfully!", {
+        description: "We will notify matching donors about your request.",
+      });
+      form.reset();
+    } catch (error) {
+      console.error("Error submitting blood request:", error);
+      toast.error("Failed to submit blood request");
+    }
   }
 
   return (

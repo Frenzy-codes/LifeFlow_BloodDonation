@@ -50,11 +50,7 @@ const BloodStatsCard = () => {
                 </div>
                 <Progress 
                   value={percentage} 
-                  className="h-2"
-                  // Fix: Use className with cn utility instead of indicatorClassName
-                  classNames={{
-                    indicator: cn(getProgressColor(percentage))
-                  }}
+                  className={cn("h-2", getProgressColor(percentage))}
                 />
                 <div className="text-xs text-gray-500 text-right">
                   {percentage}% of capacity

@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
@@ -17,41 +17,29 @@ import {
   TabsTrigger,
 } from "@/components/ui/tabs";
 import { toast } from "sonner";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
+import { useNavigate } from "react-router-dom";
+
+interface Appointment {
+  id: string;
+  date: Date;
+  time: string;
+  location: string;
+  status: string;
+  user_id: string;
+}
 
 const Appointments = () => {
   const [date, setDate] = useState<Date | undefined>(undefined);
   const [location, setLocation] = useState("");
   const [time, setTime] = useState("");
+  const [upcomingAppointments, setUpcomingAppointments] = useState<Appointment[]>([]);
+  const [pastAppointments, setPastAppointments] = useState<Appointment[]>([]);
+  const [loading, setLoading] = useState(true);
+  const { user, isLoading: authLoading } = useAuth();
+  const navigate = useNavigate();
   
-  // Mock data for upcoming appointments
-  const upcomingAppointments = [
-    {
-      id: "apt-123",
-      date: "June 15, 2025",
-      time: "10:30 AM",
-      location: "City General Hospital Blood Bank",
-      status: "Confirmed",
-    },
-  ];
-  
-  // Mock data for past appointments
-  const pastAppointments = [
-    {
-      id: "apt-100",
-      date: "February 22, 2025",
-      time: "2:00 PM",
-      location: "Downtown Blood Donation Center",
-      status: "Completed",
-    },
-    {
-      id: "apt-089",
-      date: "October 10, 2024",
-      time: "11:15 AM",
-      location: "University Medical Blood Services",
-      status: "Completed",
-    },
-  ];
-
   // Mock data for available locations
   const locations = [
     { id: "loc1", name: "City General Hospital Blood Bank" },
@@ -67,16 +55,131 @@ const Appointments = () => {
     "4:00 PM", "4:30 PM"
   ];
 
-  const handleSchedule = () => {
-    if (!date || !location || !time) {
+  useEffect(() => {
+    if (!user && !authLoading) {
+      navigate("/login");
+      return;
+    }
+    
+    if (user) {
+      fetchAppointments();
+    }
+  }, [user, authLoading, navigate]);
+
+  const fetchAppointments = async () => {
+    try {
+      setLoading(true);
+      
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      
+      const { data, error } = await supabase
+        .from("appointments")
+        .select("*")
+        .eq("user_id", user?.id)
+        .order("date", { ascending: true });
+      
+      if (error) throw error;
+      
+      const upcoming: Appointment[] = [];
+      const past: Appointment[] = [];
+      
+      data?.forEach(appointment => {
+        const appointmentDate = new Date(appointment.date);
+        if (appointmentDate >= today) {
+          upcoming.push({
+            ...appointment,
+            date: appointmentDate
+          });
+        } else {
+          past.push({
+            ...appointment,
+            date: appointmentDate
+          });
+        }
+      });
+      
+      setUpcomingAppointments(upcoming);
+      setPastAppointments(past);
+    } catch (error) {
+      console.error("Error fetching appointments:", error);
+      toast.error("Failed to load appointments");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSchedule = async () => {
+    if (!date || !location || !time || !user) {
       toast.error("Please select date, location and time slot");
       return;
     }
     
-    toast.success("Appointment scheduled successfully!", {
-      description: `Your appointment at ${location} on ${date.toDateString()} at ${time} has been confirmed.`,
+    try {
+      const { error } = await supabase
+        .from("appointments")
+        .insert({
+          user_id: user.id,
+          date: date.toISOString(),
+          time: time,
+          location: location,
+          status: "Confirmed"
+        });
+      
+      if (error) throw error;
+      
+      toast.success("Appointment scheduled successfully!", {
+        description: `Your appointment at ${location} on ${date.toDateString()} at ${time} has been confirmed.`,
+      });
+      
+      // Reset form and refresh appointments
+      setDate(undefined);
+      setLocation("");
+      setTime("");
+      fetchAppointments();
+    } catch (error) {
+      console.error("Error scheduling appointment:", error);
+      toast.error("Failed to schedule appointment");
+    }
+  };
+
+  const handleReschedule = async (appointmentId: string) => {
+    toast.info("Reschedule functionality coming soon!");
+  };
+
+  const handleCancel = async (appointmentId: string) => {
+    try {
+      const { error } = await supabase
+        .from("appointments")
+        .delete()
+        .eq("id", appointmentId)
+        .eq("user_id", user?.id);
+      
+      if (error) throw error;
+      
+      toast.success("Appointment cancelled successfully");
+      fetchAppointments();
+    } catch (error) {
+      console.error("Error cancelling appointment:", error);
+      toast.error("Failed to cancel appointment");
+    }
+  };
+
+  const formatDate = (date: Date) => {
+    return date.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
     });
   };
+
+  if (authLoading || (loading && !upcomingAppointments.length && !pastAppointments.length)) {
+    return (
+      <div className="py-12 flex justify-center">
+        <p>Loading appointments...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="py-12">
@@ -179,7 +282,7 @@ const Appointments = () => {
                         <Card key={apt.id}>
                           <CardContent className="p-4 space-y-2">
                             <div className="flex justify-between items-center">
-                              <span className="font-medium">{apt.date}</span>
+                              <span className="font-medium">{formatDate(apt.date)}</span>
                               <span className="text-sm bg-green-100 text-green-800 px-2 py-1 rounded-full">
                                 {apt.status}
                               </span>
@@ -187,10 +290,20 @@ const Appointments = () => {
                             <div className="text-sm text-gray-600">{apt.time}</div>
                             <div className="text-sm text-gray-600">{apt.location}</div>
                             <div className="pt-2 flex space-x-2">
-                              <Button variant="outline" size="sm" className="flex-1">
+                              <Button 
+                                variant="outline" 
+                                size="sm" 
+                                className="flex-1"
+                                onClick={() => handleReschedule(apt.id)}
+                              >
                                 Reschedule
                               </Button>
-                              <Button variant="outline" size="sm" className="flex-1 border-red-500 text-red-500 hover:bg-red-500 hover:text-white">
+                              <Button 
+                                variant="outline" 
+                                size="sm" 
+                                className="flex-1 border-red-500 text-red-500 hover:bg-red-500 hover:text-white"
+                                onClick={() => handleCancel(apt.id)}
+                              >
                                 Cancel
                               </Button>
                             </div>
@@ -204,25 +317,31 @@ const Appointments = () => {
                     )}
                   </TabsContent>
                   <TabsContent value="past" className="space-y-4 mt-4">
-                    {pastAppointments.map((apt) => (
-                      <Card key={apt.id}>
-                        <CardContent className="p-4 space-y-2">
-                          <div className="flex justify-between items-center">
-                            <span className="font-medium">{apt.date}</span>
-                            <span className="text-sm bg-gray-100 text-gray-800 px-2 py-1 rounded-full">
-                              {apt.status}
-                            </span>
-                          </div>
-                          <div className="text-sm text-gray-600">{apt.time}</div>
-                          <div className="text-sm text-gray-600">{apt.location}</div>
-                          <div className="pt-2">
-                            <Button variant="outline" size="sm" className="w-full">
-                              View Certificate
-                            </Button>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))}
+                    {pastAppointments.length > 0 ? (
+                      pastAppointments.map((apt) => (
+                        <Card key={apt.id}>
+                          <CardContent className="p-4 space-y-2">
+                            <div className="flex justify-between items-center">
+                              <span className="font-medium">{formatDate(apt.date)}</span>
+                              <span className="text-sm bg-gray-100 text-gray-800 px-2 py-1 rounded-full">
+                                {apt.status}
+                              </span>
+                            </div>
+                            <div className="text-sm text-gray-600">{apt.time}</div>
+                            <div className="text-sm text-gray-600">{apt.location}</div>
+                            <div className="pt-2">
+                              <Button variant="outline" size="sm" className="w-full">
+                                View Certificate
+                              </Button>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))
+                    ) : (
+                      <div className="text-center py-6 text-gray-500">
+                        No past appointments.
+                      </div>
+                    )}
                   </TabsContent>
                 </Tabs>
               </CardContent>
