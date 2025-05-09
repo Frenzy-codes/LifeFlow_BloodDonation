@@ -22,6 +22,8 @@ const Request = () => {
             <li>You may be required to provide additional documentation for verification purposes.</li>
             <li>Once submitted, matching donors will be notified of your request.</li>
             <li>Our team will contact you regarding your request status within 24 hours.</li>
+            <li>In India, a standard blood unit is approximately 350-450 ml (about one pint).</li>
+            <li>Most transfusions require 1-3 units depending on the patient's condition.</li>
           </ul>
         </div>
       </div>

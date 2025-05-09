@@ -9,6 +9,7 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
+  FormDescription,
 } from "@/components/ui/form";
 import {
   Select,
@@ -180,6 +181,9 @@ const RequestBloodForm = () => {
                     <FormControl>
                       <Input type="number" min="1" max="10" {...field} />
                     </FormControl>
+                    <FormDescription>
+                      1 unit ≈ 350-450 ml of blood
+                    </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
