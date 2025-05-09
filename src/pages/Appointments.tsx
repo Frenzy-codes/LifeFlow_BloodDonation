@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -197,7 +196,7 @@ const Appointments = () => {
       return format(date, "dd MMMM yyyy");
     } catch (error) {
       console.error("Error formatting date:", error);
-      return dateString;
+      return String(dateString); // Convert to string to solve type error
     }
   };
 
@@ -334,7 +333,7 @@ const Appointments = () => {
                           <div className="mt-2 text-sm text-gray-600">
                             <div className="flex items-center mb-1">
                               <CalendarIcon className="h-4 w-4 mr-2 text-gray-500" />
-                              {formatAppointmentDate(appointment.date)}
+                              {String(formatAppointmentDate(appointment.date))}
                             </div>
                             <div className="flex items-center mb-1">
                               <Clock className="h-4 w-4 mr-2 text-gray-500" />
@@ -379,7 +378,7 @@ const Appointments = () => {
                           <div className="mt-2 text-sm text-gray-600">
                             <div className="flex items-center mb-1">
                               <CalendarIcon className="h-4 w-4 mr-2 text-gray-500" />
-                              {formatAppointmentDate(appointment.date)}
+                              {String(formatAppointmentDate(appointment.date))}
                             </div>
                             <div className="flex items-center mb-1">
                               <Clock className="h-4 w-4 mr-2 text-gray-500" />
