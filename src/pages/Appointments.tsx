@@ -1,62 +1,59 @@
 
-import { useState, useEffect } from "react";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { useEffect, useState } from 'react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from "@/components/ui/tabs";
-import { toast } from "sonner";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { MapPin, Clock, Calendar as CalendarIcon, X } from "lucide-react";
+import { format } from "date-fns";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
-import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 interface Appointment {
   id: string;
-  date: Date | string;
+  date: string; // Store as string for database compatibility
   time: string;
   location: string;
   status: string;
-  user_id: string;
+  created_at?: string | null;
+  updated_at?: string | null;
 }
 
 const Appointments = () => {
-  const [date, setDate] = useState<Date | undefined>(undefined);
-  const [location, setLocation] = useState("");
-  const [time, setTime] = useState("");
+  const navigate = useNavigate();
+  const { user, isLoading } = useAuth();
+  
+  const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [upcomingAppointments, setUpcomingAppointments] = useState<Appointment[]>([]);
   const [pastAppointments, setPastAppointments] = useState<Appointment[]>([]);
-  const [loading, setLoading] = useState(true);
-  const { user, isLoading: authLoading } = useAuth();
-  const navigate = useNavigate();
+  const [date, setDate] = useState<Date | undefined>(new Date());
+  const [time, setTime] = useState("09:00");
+  const [location, setLocation] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [fetchingAppointments, setFetchingAppointments] = useState(true);
   
-  // Mock data for available locations
-  const locations = [
-    { id: "loc1", name: "City General Hospital Blood Bank" },
-    { id: "loc2", name: "Downtown Blood Donation Center" },
-    { id: "loc3", name: "University Medical Blood Services" },
-    { id: "loc4", name: "Central Blood Bank" },
-  ];
-
-  // Mock data for available time slots
-  const timeSlots = [
-    "9:00 AM", "9:30 AM", "10:00 AM", "10:30 AM", "11:00 AM", "11:30 AM",
-    "1:00 PM", "1:30 PM", "2:00 PM", "2:30 PM", "3:00 PM", "3:30 PM",
-    "4:00 PM", "4:30 PM"
+  // Indian blood donation centers
+  const bloodBanks = [
+    "Apollo Blood Bank, Hyderabad",
+    "Max Healthcare Blood Bank, Delhi",
+    "Tata Memorial Blood Bank, Mumbai",
+    "Fortis Blood Donation Centre, Bengaluru",
+    "AIIMS Blood Center, New Delhi",
+    "Sahyadri Blood Bank, Pune",
+    "Jankalyan Blood Bank, Pune",
+    "Rotary Blood Bank, Chandigarh",
+    "CMC Blood Bank, Vellore",
+    "PGI Blood Bank, Lucknow"
   ];
 
   useEffect(() => {
-    if (!user && !authLoading) {
+    if (!user && !isLoading) {
       navigate("/login");
       return;
     }
@@ -64,12 +61,13 @@ const Appointments = () => {
     if (user) {
       fetchAppointments();
     }
-  }, [user, authLoading, navigate]);
-
+  }, [user, isLoading, navigate]);
+  
   const fetchAppointments = async () => {
+    if (!user) return;
+    
     try {
-      setLoading(true);
-      
+      setFetchingAppointments(true);
       const today = new Date();
       today.setHours(0, 0, 0, 0);
       
@@ -81,104 +79,135 @@ const Appointments = () => {
       
       if (error) throw error;
       
-      const upcoming: Appointment[] = [];
-      const past: Appointment[] = [];
-      
-      data?.forEach(appointment => {
-        const appointmentDate = new Date(appointment.date);
-        if (appointmentDate >= today) {
-          upcoming.push({
-            ...appointment,
-            date: appointmentDate
-          });
-        } else {
-          past.push({
-            ...appointment,
-            date: appointmentDate
-          });
-        }
-      });
-      
-      setUpcomingAppointments(upcoming);
-      setPastAppointments(past);
+      if (data) {
+        // Convert ISO date strings to Date objects for comparison
+        const appointments = data as Appointment[];
+        
+        // Sort appointments by date
+        appointments.sort((a, b) => {
+          return new Date(a.date).getTime() - new Date(b.date).getTime();
+        });
+        
+        setAppointments(appointments);
+        
+        // Filter upcoming and past appointments
+        const upcoming: Appointment[] = [];
+        const past: Appointment[] = [];
+        
+        appointments.forEach(appt => {
+          const apptDate = new Date(appt.date);
+          if (apptDate.getTime() >= today.getTime()) {
+            upcoming.push(appt);
+          } else {
+            past.push(appt);
+          }
+        });
+        
+        setUpcomingAppointments(upcoming);
+        setPastAppointments(past);
+      }
     } catch (error) {
       console.error("Error fetching appointments:", error);
       toast.error("Failed to load appointments");
     } finally {
-      setLoading(false);
+      setFetchingAppointments(false);
     }
   };
-
-  const handleSchedule = async () => {
-    if (!date || !location || !time || !user) {
-      toast.error("Please select date, location and time slot");
+  
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!user) {
+      toast.error("You must be logged in to schedule an appointment");
+      navigate("/login");
+      return;
+    }
+    
+    if (!date) {
+      toast.error("Please select a date");
+      return;
+    }
+    
+    if (!location) {
+      toast.error("Please select a blood bank");
       return;
     }
     
     try {
+      setIsSubmitting(true);
+      
+      // Format the date as YYYY-MM-DD for database storage
+      const formattedDate = format(date, "yyyy-MM-dd");
+      
       // Using type assertion to fix type error
       const { error } = await supabase
         .from("appointments")
         .insert({
           user_id: user.id,
-          date: date.toISOString().split('T')[0], // Format as YYYY-MM-DD
+          date: formattedDate,
           time: time,
           location: location,
           status: "Confirmed"
-        } as any);
+        });
       
       if (error) throw error;
       
-      toast.success("Appointment scheduled successfully!", {
-        description: `Your appointment at ${location} on ${date.toDateString()} at ${time} has been confirmed.`,
-      });
+      toast.success("Appointment scheduled successfully");
       
-      // Reset form and refresh appointments
-      setDate(undefined);
+      // Reset form
+      setDate(new Date());
+      setTime("09:00");
       setLocation("");
-      setTime("");
+      
+      // Refresh appointments
       fetchAppointments();
+      
     } catch (error) {
       console.error("Error scheduling appointment:", error);
       toast.error("Failed to schedule appointment");
+    } finally {
+      setIsSubmitting(false);
     }
   };
-
-  const handleReschedule = async (appointmentId: string) => {
-    toast.info("Reschedule functionality coming soon!");
-  };
-
+  
   const handleCancel = async (appointmentId: string) => {
     try {
-      // Using type assertion to fix type error
       const { error } = await supabase
         .from("appointments")
         .delete()
-        .eq("id", appointmentId)
-        .eq("user_id", user?.id);
+        .eq("id", appointmentId);
       
       if (error) throw error;
       
       toast.success("Appointment cancelled successfully");
+      
+      // Refresh appointments
       fetchAppointments();
+      
     } catch (error) {
       console.error("Error cancelling appointment:", error);
       toast.error("Failed to cancel appointment");
     }
   };
 
-  const formatDate = (date: Date) => {
-    return date.toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    });
+  // Function to format the date string for display
+  const formatAppointmentDate = (dateString: string | Date) => {
+    try {
+      const date = new Date(dateString);
+      return format(date, "dd MMMM yyyy");
+    } catch (error) {
+      console.error("Error formatting date:", error);
+      return dateString;
+    }
   };
 
-  if (authLoading || (loading && !upcomingAppointments.length && !pastAppointments.length)) {
+  if (isLoading || fetchingAppointments) {
     return (
-      <div className="py-12 flex justify-center">
-        <p>Loading appointments...</p>
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blood mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading appointments...</p>
+        </div>
       </div>
     );
   }
@@ -189,166 +218,190 @@ const Appointments = () => {
         <div className="text-center mb-12">
           <h1 className="text-4xl font-bold text-gray-900">Blood Donation Appointments</h1>
           <p className="mt-4 text-xl text-gray-500">
-            Schedule a new appointment or manage your existing ones
+            Schedule and manage your blood donation appointments
           </p>
         </div>
         
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2">
-            <Card className="shadow-md">
-              <CardHeader>
-                <CardTitle className="text-2xl text-blood font-semibold">Schedule New Appointment</CardTitle>
-                <CardDescription>Select your preferred date, location and time</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <h3 className="text-sm font-medium mb-2">Select a date:</h3>
-                    <Calendar
-                      mode="single"
-                      selected={date}
-                      onSelect={setDate}
-                      className="border rounded-md"
-                      disabled={(date) => {
-                        // Disable past dates and Sundays
-                        const today = new Date();
-                        today.setHours(0, 0, 0, 0);
-                        return date < today || date.getDay() === 0;
-                      }}
-                    />
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          {/* Schedule Appointment Card */}
+          <Card className="shadow-md">
+            <CardHeader>
+              <CardTitle className="text-2xl text-blood font-semibold">Schedule an Appointment</CardTitle>
+              <CardDescription>Book your next blood donation</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handleSubmit}>
+                <div className="space-y-6">
+                  <div className="space-y-2">
+                    <Label htmlFor="date">Select Date</Label>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline"
+                          className="w-full flex justify-between items-center"
+                        >
+                          {date ? format(date, "PPP") : "Pick a date"}
+                          <CalendarIcon className="h-4 w-4 opacity-50" />
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar
+                          mode="single"
+                          selected={date}
+                          onSelect={setDate}
+                          disabled={(date) => {
+                            const now = new Date();
+                            const yesterday = new Date(now);
+                            yesterday.setDate(yesterday.getDate() - 1);
+                            return date < yesterday;
+                          }}
+                          initialFocus
+                        />
+                      </PopoverContent>
+                    </Popover>
                   </div>
                   
-                  <div className="space-y-6">
-                    <div>
-                      <h3 className="text-sm font-medium mb-2">Select location:</h3>
-                      <Select value={location} onValueChange={setLocation}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select location" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {locations.map((loc) => (
-                            <SelectItem key={loc.id} value={loc.name}>
-                              {loc.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    
-                    <div>
-                      <h3 className="text-sm font-medium mb-2">Select time slot:</h3>
-                      <div className="grid grid-cols-2 gap-2">
-                        {timeSlots.map((slot) => (
-                          <Button 
-                            key={slot}
-                            variant={time === slot ? "default" : "outline"} 
-                            className={time === slot ? "bg-blood hover:bg-blood-hover" : ""}
-                            onClick={() => setTime(slot)}
-                            size="sm"
-                          >
-                            {slot}
-                          </Button>
-                        ))}
-                      </div>
-                    </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="time">Select Time</Label>
+                    <Select value={time} onValueChange={setTime}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select time" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="09:00">9:00 AM</SelectItem>
+                        <SelectItem value="10:00">10:00 AM</SelectItem>
+                        <SelectItem value="11:00">11:00 AM</SelectItem>
+                        <SelectItem value="12:00">12:00 PM</SelectItem>
+                        <SelectItem value="13:00">1:00 PM</SelectItem>
+                        <SelectItem value="14:00">2:00 PM</SelectItem>
+                        <SelectItem value="15:00">3:00 PM</SelectItem>
+                        <SelectItem value="16:00">4:00 PM</SelectItem>
+                        <SelectItem value="17:00">5:00 PM</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="location">Select Blood Bank</Label>
+                    <Select value={location} onValueChange={setLocation}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select blood bank" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {bloodBanks.map((bank) => (
+                          <SelectItem key={bank} value={bank}>{bank}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  <Button 
+                    type="submit" 
+                    className="w-full bg-blood hover:bg-blood-hover"
+                    disabled={isSubmitting}
+                  >
+                    {isSubmitting ? "Scheduling..." : "Schedule Appointment"}
+                  </Button>
                 </div>
-              </CardContent>
-              <CardFooter>
-                <Button 
-                  className="w-full bg-blood hover:bg-blood-hover"
-                  onClick={handleSchedule}
-                  disabled={!date || !location || !time}
-                >
-                  Schedule Appointment
-                </Button>
-              </CardFooter>
-            </Card>
-          </div>
+              </form>
+            </CardContent>
+          </Card>
           
-          <div>
-            <Card className="shadow-md">
-              <CardHeader>
-                <CardTitle className="text-2xl text-blood font-semibold">Your Appointments</CardTitle>
-                <CardDescription>View and manage your appointments</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Tabs defaultValue="upcoming">
-                  <TabsList className="grid w-full grid-cols-2">
-                    <TabsTrigger value="upcoming">Upcoming</TabsTrigger>
-                    <TabsTrigger value="past">Past</TabsTrigger>
-                  </TabsList>
-                  <TabsContent value="upcoming" className="space-y-4 mt-4">
-                    {upcomingAppointments.length > 0 ? (
-                      upcomingAppointments.map((apt) => (
-                        <Card key={apt.id}>
-                          <CardContent className="p-4 space-y-2">
-                            <div className="flex justify-between items-center">
-                              <span className="font-medium">{formatDate(apt.date)}</span>
-                              <span className="text-sm bg-green-100 text-green-800 px-2 py-1 rounded-full">
-                                {apt.status}
-                              </span>
+          {/* Appointments List Card */}
+          <Card className="shadow-md">
+            <CardHeader>
+              <CardTitle className="text-2xl text-blood font-semibold">Your Appointments</CardTitle>
+              <CardDescription>View and manage your blood donation appointments</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Tabs defaultValue="upcoming">
+                <TabsList className="w-full grid grid-cols-2 mb-4">
+                  <TabsTrigger value="upcoming">Upcoming</TabsTrigger>
+                  <TabsTrigger value="past">Past</TabsTrigger>
+                </TabsList>
+                
+                <TabsContent value="upcoming">
+                  {upcomingAppointments.length > 0 ? (
+                    <div className="space-y-4">
+                      {upcomingAppointments.map((appointment) => (
+                        <div key={appointment.id} className="p-4 border rounded-lg hover:bg-gray-50">
+                          <div className="flex justify-between">
+                            <h3 className="font-semibold">{appointment.location}</h3>
+                            <span className="px-2 py-1 text-xs rounded-full bg-green-100 text-green-800">
+                              {appointment.status}
+                            </span>
+                          </div>
+                          <div className="mt-2 text-sm text-gray-600">
+                            <div className="flex items-center mb-1">
+                              <CalendarIcon className="h-4 w-4 mr-2 text-gray-500" />
+                              {formatAppointmentDate(appointment.date)}
                             </div>
-                            <div className="text-sm text-gray-600">{apt.time}</div>
-                            <div className="text-sm text-gray-600">{apt.location}</div>
-                            <div className="pt-2 flex space-x-2">
-                              <Button 
-                                variant="outline" 
-                                size="sm" 
-                                className="flex-1"
-                                onClick={() => handleReschedule(apt.id)}
-                              >
-                                Reschedule
-                              </Button>
-                              <Button 
-                                variant="outline" 
-                                size="sm" 
-                                className="flex-1 border-red-500 text-red-500 hover:bg-red-500 hover:text-white"
-                                onClick={() => handleCancel(apt.id)}
-                              >
-                                Cancel
-                              </Button>
+                            <div className="flex items-center mb-1">
+                              <Clock className="h-4 w-4 mr-2 text-gray-500" />
+                              {appointment.time}
                             </div>
-                          </CardContent>
-                        </Card>
-                      ))
-                    ) : (
-                      <div className="text-center py-6 text-gray-500">
-                        No upcoming appointments.
-                      </div>
-                    )}
-                  </TabsContent>
-                  <TabsContent value="past" className="space-y-4 mt-4">
-                    {pastAppointments.length > 0 ? (
-                      pastAppointments.map((apt) => (
-                        <Card key={apt.id}>
-                          <CardContent className="p-4 space-y-2">
-                            <div className="flex justify-between items-center">
-                              <span className="font-medium">{formatDate(apt.date)}</span>
-                              <span className="text-sm bg-gray-100 text-gray-800 px-2 py-1 rounded-full">
-                                {apt.status}
-                              </span>
+                            <div className="flex items-center">
+                              <MapPin className="h-4 w-4 mr-2 text-gray-500" />
+                              {appointment.location}
                             </div>
-                            <div className="text-sm text-gray-600">{apt.time}</div>
-                            <div className="text-sm text-gray-600">{apt.location}</div>
-                            <div className="pt-2">
-                              <Button variant="outline" size="sm" className="w-full">
-                                View Certificate
-                              </Button>
+                          </div>
+                          <div className="mt-4 flex justify-end">
+                            <Button 
+                              variant="destructive" 
+                              size="sm"
+                              onClick={() => handleCancel(appointment.id)}
+                            >
+                              <X className="h-4 w-4 mr-2" />
+                              Cancel
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-8">
+                      <p className="text-gray-500">No upcoming appointments. Schedule one now!</p>
+                    </div>
+                  )}
+                </TabsContent>
+                
+                <TabsContent value="past">
+                  {pastAppointments.length > 0 ? (
+                    <div className="space-y-4">
+                      {pastAppointments.map((appointment) => (
+                        <div key={appointment.id} className="p-4 border rounded-lg bg-gray-50">
+                          <div className="flex justify-between">
+                            <h3 className="font-semibold">{appointment.location}</h3>
+                            <span className="px-2 py-1 text-xs rounded-full bg-gray-200 text-gray-700">
+                              Completed
+                            </span>
+                          </div>
+                          <div className="mt-2 text-sm text-gray-600">
+                            <div className="flex items-center mb-1">
+                              <CalendarIcon className="h-4 w-4 mr-2 text-gray-500" />
+                              {formatAppointmentDate(appointment.date)}
                             </div>
-                          </CardContent>
-                        </Card>
-                      ))
-                    ) : (
-                      <div className="text-center py-6 text-gray-500">
-                        No past appointments.
-                      </div>
-                    )}
-                  </TabsContent>
-                </Tabs>
-              </CardContent>
-            </Card>
-          </div>
+                            <div className="flex items-center mb-1">
+                              <Clock className="h-4 w-4 mr-2 text-gray-500" />
+                              {appointment.time}
+                            </div>
+                            <div className="flex items-center">
+                              <MapPin className="h-4 w-4 mr-2 text-gray-500" />
+                              {appointment.location}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-8">
+                      <p className="text-gray-500">No past appointments found.</p>
+                    </div>
+                  )}
+                </TabsContent>
+              </Tabs>
+            </CardContent>
+          </Card>
         </div>
       </div>
     </div>

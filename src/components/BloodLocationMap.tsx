@@ -1,75 +1,145 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { MapPin, Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import GoogleMap from "./GoogleMap";
+import { toast } from "sonner";
 
-// Mock data for blood donation centers
-const mockCenters = [
+// Indian blood donation centers data
+const indianCenters = [
   {
     id: 1,
-    name: "Community Blood Center",
-    address: "123 Main St, Anytown, USA",
-    distance: "1.2 miles",
+    name: "Sahyadri Blood Bank",
+    address: "Karve Road, Deccan Gymkhana, Pune, Maharashtra",
+    distance: "1.2 km",
     availability: "High",
+    position: { lat: 18.5204, lng: 73.8567 },
   },
   {
     id: 2,
-    name: "Regional Medical Blood Bank",
-    address: "456 Oak Ave, Anytown, USA",
-    distance: "2.5 miles",
+    name: "Jankalyan Blood Bank",
+    address: "MG Road, Camp Area, Pune, Maharashtra",
+    distance: "2.5 km",
     availability: "Medium",
+    position: { lat: 18.5138, lng: 73.8750 },
   },
   {
     id: 3,
-    name: "University Hospital Blood Services",
-    address: "789 College Blvd, Anytown, USA",
-    distance: "3.7 miles",
+    name: "AIIMS Blood Center",
+    address: "Saket, New Delhi, Delhi",
+    distance: "3.7 km",
     availability: "Low",
+    position: { lat: 28.5355, lng: 77.2100 },
   },
 ];
 
 const BloodLocationMap = () => {
   const [location, setLocation] = useState("");
+  const [mapCenter, setMapCenter] = useState({ lat: 18.5204, lng: 73.8567 }); // Default to Pune
+  const [markers, setMarkers] = useState<Array<any>>([]);
+  const [filteredCenters, setFilteredCenters] = useState(indianCenters);
+  const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
+
+  useEffect(() => {
+    // Initialize markers based on blood centers
+    const centerMarkers = indianCenters.map((center) => ({
+      position: center.position,
+      title: center.name,
+      info: `${center.address}<br>Blood Availability: ${center.availability}`,
+    }));
+    setMarkers(centerMarkers);
+  }, []);
+
+  const handleSearch = () => {
+    if (!location.trim()) {
+      toast.error("Please enter a location");
+      return;
+    }
+
+    // In a real app, you would use the Geocoding API to convert the location to coordinates
+    // For this demo, we'll just simulate finding the centers
+    toast.success(`Searching blood banks near ${location}`);
+    
+    // Simulate finding centers near the searched location
+    // In a real app, this would filter based on actual geocoded location
+    const filtered = indianCenters.filter((center) => 
+      center.name.toLowerCase().includes(location.toLowerCase()) || 
+      center.address.toLowerCase().includes(location.toLowerCase())
+    );
+    
+    setFilteredCenters(filtered.length > 0 ? filtered : indianCenters);
+  };
+
+  const getUserLocation = () => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const userPos = {
+            lat: position.coords.latitude,
+            lng: position.coords.longitude,
+          };
+          setUserLocation(userPos);
+          setMapCenter(userPos);
+          toast.success("Located you successfully!");
+        },
+        () => {
+          toast.error("Unable to retrieve your location");
+        }
+      );
+    } else {
+      toast.error("Geolocation is not supported by your browser");
+    }
+  };
 
   return (
     <div className="flex flex-col lg:flex-row gap-6">
       <Card className="w-full lg:w-1/2 shadow-md">
         <CardHeader>
           <CardTitle className="text-2xl text-blood font-semibold">Find Blood Banks Near You</CardTitle>
-          <CardDescription>Locate the closest donation centers</CardDescription>
+          <CardDescription>Locate the closest donation centers in India</CardDescription>
         </CardHeader>
         <CardContent>
           {/* Search Input */}
-          <div className="flex w-full max-w-sm items-center space-x-2 mb-6">
+          <div className="flex flex-col md:flex-row w-full items-center space-y-2 md:space-y-0 md:space-x-2 mb-6">
             <Input
               type="text"
-              placeholder="Enter your location"
+              placeholder="Enter your location in India"
               value={location}
               onChange={(e) => setLocation(e.target.value)}
+              className="flex-1"
             />
-            <Button className="bg-blood hover:bg-blood-hover">
-              <Search className="h-4 w-4 mr-2" /> Search
-            </Button>
+            <div className="flex space-x-2 w-full md:w-auto">
+              <Button className="bg-blood hover:bg-blood-hover flex-1 md:flex-none" onClick={handleSearch}>
+                <Search className="h-4 w-4 mr-2" /> Search
+              </Button>
+              <Button variant="outline" className="flex-1 md:flex-none" onClick={getUserLocation}>
+                <MapPin className="h-4 w-4 mr-2" /> Use My Location
+              </Button>
+            </div>
           </div>
 
-          {/* Map Placeholder - In a real app, this would be a Google Map */}
-          <div className="w-full h-60 bg-gray-200 rounded-md flex items-center justify-center mb-6">
-            <div className="text-center">
-              <MapPin className="h-8 w-8 text-gray-400 mx-auto mb-2" />
-              <p className="text-gray-500">
-                Map loading... (In a real app, this would be an interactive Google Map)
-              </p>
-            </div>
+          {/* Google Map */}
+          <div className="w-full mb-6 rounded-md overflow-hidden">
+            <GoogleMap 
+              center={mapCenter} 
+              zoom={12} 
+              markers={markers}
+              height="300px"
+            />
           </div>
 
           {/* Location Results */}
           <div className="space-y-4">
             <h3 className="text-lg font-medium">Nearby Blood Banks</h3>
             <div className="space-y-3">
-              {mockCenters.map((center) => (
-                <div key={center.id} className="p-4 border rounded-lg hover:bg-gray-50 transition-colors">
+              {filteredCenters.map((center) => (
+                <div 
+                  key={center.id} 
+                  className="p-4 border rounded-lg hover:bg-gray-50 transition-colors cursor-pointer"
+                  onClick={() => setMapCenter(center.position)}
+                >
                   <div className="flex justify-between">
                     <h4 className="font-semibold">{center.name}</h4>
                     <span className="text-sm text-gray-500">{center.distance}</span>
@@ -131,7 +201,7 @@ const BloodLocationMap = () => {
             <div className="pt-4">
               <Button className="w-full bg-blood hover:bg-blood-hover">Book Appointment</Button>
               <p className="text-xs text-gray-500 text-center mt-2">
-                You'll receive a confirmation email after booking
+                You'll receive a confirmation SMS after booking
               </p>
             </div>
           </div>
