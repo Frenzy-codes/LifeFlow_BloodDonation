@@ -2,16 +2,47 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search, MapPin, Phone, Clock } from "lucide-react";
+import { Search, MapPin, Phone, Clock, Calendar, X } from "lucide-react";
 import { useState, useEffect } from "react";
 import GoogleMap from "@/components/GoogleMap";
 import { toast } from "sonner";
+import { 
+  Dialog, 
+  DialogContent, 
+  DialogDescription, 
+  DialogHeader, 
+  DialogTitle,
+  DialogFooter
+} from "@/components/ui/dialog";
+import { 
+  Select, 
+  SelectContent, 
+  SelectItem, 
+  SelectTrigger, 
+  SelectValue 
+} from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
+import { format } from "date-fns";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar as CalendarComponent } from "@/components/ui/calendar";
+import { useAuth } from "@/contexts/AuthContext";
+import { useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
 
 const Banks = () => {
+  const { user, isLoading: authLoading } = useAuth();
+  const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
   const [mapCenter, setMapCenter] = useState({ lat: 20.5937, lng: 78.9629 }); // Default center of India
   const [markers, setMarkers] = useState<Array<any>>([]);
   const [filteredBanks, setFilteredBanks] = useState<typeof indianBanks>([]);
+  
+  // Scheduling state
+  const [isScheduleOpen, setIsScheduleOpen] = useState(false);
+  const [selectedBank, setSelectedBank] = useState<any>(null);
+  const [date, setDate] = useState<Date | undefined>(new Date());
+  const [time, setTime] = useState("09:00");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Mock data for Indian blood banks
   const indianBanks = [
@@ -132,6 +163,82 @@ const Banks = () => {
   const handleCardClick = (bank: any) => {
     setMapCenter(bank.position);
   };
+  
+  const openScheduleModal = (bank: any, e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent card click event
+    
+    if (!user && !authLoading) {
+      toast.error("You must be logged in to schedule a donation");
+      navigate("/login");
+      return;
+    }
+    
+    setSelectedBank(bank);
+    setIsScheduleOpen(true);
+  };
+  
+  const closeScheduleModal = () => {
+    setIsScheduleOpen(false);
+    setSelectedBank(null);
+  };
+  
+  const handleScheduleDonation = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!user) {
+      toast.error("You must be logged in to schedule an appointment");
+      navigate("/login");
+      return;
+    }
+    
+    if (!date) {
+      toast.error("Please select a date");
+      return;
+    }
+    
+    if (!selectedBank) {
+      toast.error("No blood bank selected");
+      return;
+    }
+    
+    try {
+      setIsSubmitting(true);
+      
+      // Format the date as YYYY-MM-DD for database storage
+      const formattedDate = format(date, "yyyy-MM-dd");
+      
+      const { error } = await supabase
+        .from("appointments")
+        .insert({
+          user_id: user.id,
+          date: formattedDate,
+          time: time,
+          location: selectedBank.name,
+          status: "Confirmed"
+        });
+      
+      if (error) throw error;
+      
+      toast.success("Donation appointment scheduled successfully");
+      
+      // Close modal
+      closeScheduleModal();
+      
+    } catch (error) {
+      console.error("Error scheduling appointment:", error);
+      toast.error("Failed to schedule appointment");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+  
+  const handleGetDirections = (bank: any, e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent card click event
+    
+    // Open Google Maps directions in a new tab
+    const mapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${bank.position.lat},${bank.position.lng}&destination_place_id=${bank.name}`;
+    window.open(mapsUrl, '_blank');
+  };
 
   return (
     <div className="py-12">
@@ -220,10 +327,17 @@ const Banks = () => {
                   </div>
                   
                   <div className="flex space-x-2 pt-2">
-                    <Button className="flex-1 bg-blood hover:bg-blood-hover">
+                    <Button 
+                      className="flex-1 bg-blood hover:bg-blood-hover"
+                      onClick={(e) => openScheduleModal(bank, e)}
+                    >
                       Schedule Donation
                     </Button>
-                    <Button variant="outline" className="flex-1 border-blood text-blood hover:bg-blood hover:text-white">
+                    <Button 
+                      variant="outline" 
+                      className="flex-1 border-blood text-blood hover:bg-blood hover:text-white"
+                      onClick={(e) => handleGetDirections(bank, e)}
+                    >
                       Get Directions
                     </Button>
                   </div>
@@ -237,6 +351,87 @@ const Banks = () => {
           )}
         </div>
       </div>
+      
+      {/* Schedule Donation Modal */}
+      <Dialog open={isScheduleOpen} onOpenChange={setIsScheduleOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle className="text-blood">Schedule Blood Donation</DialogTitle>
+            <DialogDescription>
+              {selectedBank ? `at ${selectedBank.name}` : 'Select a date and time for your donation.'}
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleScheduleDonation}>
+            <div className="grid gap-4 py-4">
+              <div className="grid gap-2">
+                <Label htmlFor="date">Date</Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      id="date"
+                      variant="outline"
+                      className="w-full justify-start text-left font-normal"
+                    >
+                      {date ? format(date, "PPP") : "Select a date"}
+                      <Calendar className="ml-auto h-4 w-4 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <CalendarComponent
+                      mode="single"
+                      selected={date}
+                      onSelect={setDate}
+                      disabled={(date) => {
+                        const today = new Date();
+                        today.setHours(0, 0, 0, 0);
+                        return date < today;
+                      }}
+                      initialFocus
+                      className="p-3 pointer-events-auto"
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="time">Time</Label>
+                <Select value={time} onValueChange={setTime}>
+                  <SelectTrigger id="time">
+                    <SelectValue placeholder="Select a time" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="09:00">9:00 AM</SelectItem>
+                    <SelectItem value="10:00">10:00 AM</SelectItem>
+                    <SelectItem value="11:00">11:00 AM</SelectItem>
+                    <SelectItem value="12:00">12:00 PM</SelectItem>
+                    <SelectItem value="13:00">1:00 PM</SelectItem>
+                    <SelectItem value="14:00">2:00 PM</SelectItem>
+                    <SelectItem value="15:00">3:00 PM</SelectItem>
+                    <SelectItem value="16:00">4:00 PM</SelectItem>
+                    <SelectItem value="17:00">5:00 PM</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="mt-2">
+                <p className="text-sm text-gray-500">
+                  Please arrive 15 minutes before your scheduled time. Make sure you're well-hydrated and have had a proper meal before donating.
+                </p>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={closeScheduleModal} type="button">
+                Cancel
+              </Button>
+              <Button 
+                className="bg-blood hover:bg-blood-hover" 
+                type="submit" 
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? "Scheduling..." : "Schedule Donation"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
