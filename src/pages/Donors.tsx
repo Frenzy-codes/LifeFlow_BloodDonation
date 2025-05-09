@@ -16,58 +16,58 @@ const Donors = () => {
   const [bloodType, setBloodType] = useState("");
   const [location, setLocation] = useState("");
 
-  // Mock data for donors
-  const mockDonors = [
+  // Indian donor data
+  const indianDonors = [
     {
       id: 1,
-      name: "James Wilson",
+      name: "Rajesh Kumar",
       bloodType: "O+",
-      location: "New York, NY",
+      location: "Mumbai, Maharashtra",
       lastDonation: "3 months ago",
       donationCount: 12,
       available: true,
     },
     {
       id: 2,
-      name: "Emma Thompson",
+      name: "Priya Sharma",
       bloodType: "AB-",
-      location: "Boston, MA",
+      location: "Delhi, NCR",
       lastDonation: "6 months ago",
       donationCount: 8,
       available: true,
     },
     {
       id: 3,
-      name: "Alex Rodriguez",
+      name: "Amit Patel",
       bloodType: "A+",
-      location: "Chicago, IL",
+      location: "Ahmedabad, Gujarat",
       lastDonation: "1 month ago",
       donationCount: 20,
       available: false,
     },
     {
       id: 4,
-      name: "Sofia Chen",
+      name: "Sunita Reddy",
       bloodType: "B+",
-      location: "San Francisco, CA",
+      location: "Bangalore, Karnataka",
       lastDonation: "2 months ago",
       donationCount: 15,
       available: true,
     },
     {
       id: 5,
-      name: "Marcus Johnson",
+      name: "Karthik Iyer",
       bloodType: "O-",
-      location: "Dallas, TX",
+      location: "Chennai, Tamil Nadu",
       lastDonation: "1 year ago",
       donationCount: 5,
       available: true,
     },
     {
       id: 6,
-      name: "Priya Patel",
+      name: "Ananya Desai",
       bloodType: "A-",
-      location: "Miami, FL",
+      location: "Pune, Maharashtra",
       lastDonation: "4 months ago",
       donationCount: 10,
       available: true,
@@ -123,7 +123,7 @@ const Donors = () => {
         </Card>
         
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {mockDonors.map((donor) => (
+          {indianDonors.map((donor) => (
             <Card key={donor.id} className={`shadow-md hover:shadow-lg transition-shadow ${!donor.available && 'opacity-60'}`}>
               <CardHeader className="pb-2">
                 <div className="flex justify-between items-center">

@@ -13,7 +13,7 @@ const Footer = () => {
               <span className="ml-2 text-lg font-bold text-blood">LifeFlow</span>
             </div>
             <p className="text-gray-600 text-sm">
-              Connecting donors and recipients to save lives through blood donation.
+              Connecting donors and recipients to save lives through blood donation across India.
             </p>
             <div className="flex space-x-4">
               <a href="#" className="text-gray-400 hover:text-blood">
@@ -71,16 +71,16 @@ const Footer = () => {
             <h3 className="text-sm font-semibold text-gray-800 tracking-wider uppercase">Contact Us</h3>
             <ul className="mt-4 space-y-2">
               <li className="text-gray-600 text-sm">
-                <span className="font-medium">Address:</span> 123 Donation Street, Cityville, State 12345
+                <span className="font-medium">Address:</span> 45 Nehru Road, Dadar, Mumbai 400014, Maharashtra
               </li>
               <li className="text-gray-600 text-sm">
-                <span className="font-medium">Email:</span> contact@lifeflow.org
+                <span className="font-medium">Email:</span> contact@lifeflow.org.in
               </li>
               <li className="text-gray-600 text-sm">
-                <span className="font-medium">Phone:</span> (123) 456-7890
+                <span className="font-medium">Phone:</span> +91 (022) 2456-7890
               </li>
               <li className="text-gray-600 text-sm">
-                <span className="font-medium">Emergency Hotline:</span> 1-800-BLOOD-HELP
+                <span className="font-medium">Emergency Hotline:</span> 1800-233-BLOOD (25663)
               </li>
             </ul>
           </div>

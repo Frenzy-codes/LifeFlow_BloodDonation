@@ -1,10 +1,10 @@
 
 import React, { useEffect, useRef, useState } from "react";
 
-// Add Google Maps types
+// Declare Google Maps types properly
 declare global {
   interface Window {
-    google: typeof google;
+    google: any;
   }
 }
 
@@ -28,8 +28,8 @@ const GoogleMap: React.FC<GoogleMapProps> = ({
   onMarkerClick,
 }) => {
   const mapRef = useRef<HTMLDivElement>(null);
-  const [map, setMap] = useState<google.maps.Map | null>(null);
-  const [infoWindow, setInfoWindow] = useState<google.maps.InfoWindow | null>(null);
+  const [map, setMap] = useState<any | null>(null);
+  const [infoWindow, setInfoWindow] = useState<any | null>(null);
   const [isLoaded, setIsLoaded] = useState(false);
 
   useEffect(() => {
