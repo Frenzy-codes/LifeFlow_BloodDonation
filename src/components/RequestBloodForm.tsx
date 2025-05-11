@@ -27,6 +27,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { useEffect } from "react";
+import { Checkbox } from "@/components/ui/checkbox";
 
 const formSchema = z.object({
   fullName: z.string().min(2, {
@@ -47,6 +48,8 @@ const formSchema = z.object({
   urgency: z.string({
     required_error: "Please select urgency level.",
   }),
+  isSubscription: z.boolean().default(false),
+  subscriptionFrequency: z.string().optional(),
   additionalInfo: z.string().optional(),
 });
 
@@ -68,9 +71,13 @@ const RequestBloodForm = () => {
       contactNumber: "",
       unitsNeeded: "1",
       hospital: "",
+      isSubscription: false,
       additionalInfo: "",
     },
   });
+
+  // Watch for subscription checkbox changes
+  const isSubscription = form.watch("isSubscription");
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     if (!user) {
@@ -90,6 +97,8 @@ const RequestBloodForm = () => {
           units_needed: parseInt(values.unitsNeeded),
           hospital: values.hospital,
           urgency: values.urgency,
+          is_subscription: values.isSubscription,
+          subscription_frequency: values.subscriptionFrequency,
           additional_info: values.additionalInfo,
           status: "Pending"
         } as any);
@@ -97,7 +106,9 @@ const RequestBloodForm = () => {
       if (error) throw error;
       
       toast.success("Blood request submitted successfully!", {
-        description: "We will notify matching donors about your request.",
+        description: values.isSubscription 
+          ? "We've registered your recurring blood need." 
+          : "We will notify matching donors about your request.",
       });
       form.reset();
     } catch (error) {
@@ -227,6 +238,59 @@ const RequestBloodForm = () => {
               )}
             />
 
+            {/* Subscription Options */}
+            <div className="bg-gray-50 p-4 rounded-md border">
+              <FormField
+                control={form.control}
+                name="isSubscription"
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-start space-x-3 space-y-0 mb-4">
+                    <FormControl>
+                      <Checkbox 
+                        checked={field.value} 
+                        onCheckedChange={field.onChange}
+                      />
+                    </FormControl>
+                    <div className="space-y-1 leading-none">
+                      <FormLabel>This is a recurring blood need</FormLabel>
+                      <FormDescription>
+                        For patients who need regular transfusions (thalassemia, hemophilia, etc.)
+                      </FormDescription>
+                    </div>
+                  </FormItem>
+                )}
+              />
+
+              {isSubscription && (
+                <FormField
+                  control={form.control}
+                  name="subscriptionFrequency"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Subscription Frequency</FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select frequency" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="monthly">Monthly</SelectItem>
+                          <SelectItem value="quarterly">Quarterly (Every 3 months)</SelectItem>
+                          <SelectItem value="semi-annual">Semi-Annually (Every 6 months)</SelectItem>
+                          <SelectItem value="custom">Custom (Specify in additional info)</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormDescription>
+                        We'll organize regular donations according to this schedule
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              )}
+            </div>
+
             <FormField
               control={form.control}
               name="additionalInfo"
@@ -235,7 +299,9 @@ const RequestBloodForm = () => {
                   <FormLabel>Additional Information</FormLabel>
                   <FormControl>
                     <Textarea
-                      placeholder="Any additional details that might be relevant..."
+                      placeholder={isSubscription 
+                        ? "Any details about the recurring blood need, specific dates, or special requirements..."
+                        : "Any additional details that might be relevant..."}
                       className="resize-none"
                       {...field}
                     />

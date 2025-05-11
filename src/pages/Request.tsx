@@ -24,6 +24,8 @@ const Request = () => {
             <li>Our team will contact you regarding your request status within 24 hours.</li>
             <li>In India, a standard blood unit is approximately 350-450 ml (about one pint).</li>
             <li>Most transfusions require 1-3 units depending on the patient's condition.</li>
+            <li>For recurring blood needs (subscription requests), we coordinate with regular donors who match your requirements.</li>
+            <li>Subscription requests are ideal for patients with conditions like thalassemia, hemophilia, or those undergoing long-term treatments.</li>
           </ul>
         </div>
       </div>
