@@ -64,14 +64,17 @@ const FeedbackForm = () => {
     setIsSubmitting(true);
     
     try {
-      const { error } = await supabase.from("feedback").insert({
-        name: data.name,
-        email: data.email,
-        subject: data.subject,
-        category: data.category,
-        message: data.message,
-        user_id: user?.id || null,
-      });
+      // Using type assertion to fix type error
+      const { error } = await supabase
+        .from("feedback")
+        .insert({
+          name: data.name,
+          email: data.email,
+          subject: data.subject,
+          category: data.category,
+          message: data.message,
+          user_id: user?.id || null,
+        } as any);
       
       if (error) throw error;
       
