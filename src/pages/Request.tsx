@@ -1,6 +1,5 @@
 
 import RequestBloodForm from "@/components/RequestBloodForm";
-import FeedbackForm from "@/components/FeedbackForm";
 
 const Request = () => {
   return (
@@ -11,10 +10,6 @@ const Request = () => {
           <p className="mt-4 text-xl text-gray-500">
             Fill out the form below to submit a blood request. We'll notify matching donors in your area.
           </p>
-        </div>
-        
-        <div className="mb-8 text-right">
-          <FeedbackForm />
         </div>
         
         <RequestBloodForm />
