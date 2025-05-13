@@ -1,8 +1,8 @@
-
 import Hero from "@/components/Hero";
 import WhyDonate from "@/components/WhyDonate";
 import BloodStatsCard from "@/components/BloodStatsCard";
 import BloodLocationMap from "@/components/BloodLocationMap";
+import FeedbackForm from "@/components/FeedbackForm";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { Droplet, Calendar, Bell } from "lucide-react";
@@ -179,11 +179,26 @@ const Index = () => {
           </div>
         </div>
       </div>
+      
+      {/* Feedback Section */}
+      <div className="py-12">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-8">
+            <h2 className="text-3xl font-bold text-gray-900">Share Your Feedback</h2>
+            <p className="mt-4 max-w-2xl mx-auto text-xl text-gray-500">
+              Your opinion matters! Help us improve our blood donation services.
+            </p>
+          </div>
+          <div className="flex justify-center">
+            <FeedbackForm />
+          </div>
+        </div>
+      </div>
     </>
   );
 };
 
-// Missing icon imports
+// Importing missing icons
 import { UserPlus, Activity, Coffee } from "lucide-react";
 
 export default Index;

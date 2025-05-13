@@ -13,6 +13,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import EligibilityTest from "@/components/EligibilityTest";
 
 interface Appointment {
   id: string;
@@ -219,6 +220,10 @@ const Appointments = () => {
           <p className="mt-4 text-xl text-gray-500">
             Schedule and manage your blood donation appointments
           </p>
+        </div>
+        
+        <div className="mb-8 flex justify-center">
+          <EligibilityTest />
         </div>
         
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">

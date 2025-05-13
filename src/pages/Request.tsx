@@ -1,6 +1,5 @@
 
 import RequestBloodForm from "@/components/RequestBloodForm";
-import EligibilityTest from "@/components/EligibilityTest";
 import FeedbackForm from "@/components/FeedbackForm";
 
 const Request = () => {
@@ -14,8 +13,7 @@ const Request = () => {
           </p>
         </div>
         
-        <div className="mb-8 grid grid-cols-1 md:grid-cols-2 gap-4">
-          <EligibilityTest />
+        <div className="mb-8 text-right">
           <FeedbackForm />
         </div>
         
