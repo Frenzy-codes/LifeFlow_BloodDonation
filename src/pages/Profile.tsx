@@ -47,13 +47,20 @@ const Profile = () => {
   const fetchProfile = async () => {
     try {
       setProfileLoading(true);
+      console.log("Fetching profile for user ID:", user?.id);
+      
       const { data, error } = await supabase
         .from("profiles")
         .select("*")
         .eq("id", user?.id)
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error("Error fetching profile:", error);
+        throw error;
+      }
+
+      console.log("Profile data retrieved:", data);
 
       if (data) {
         setFullName(data.full_name || "");
@@ -65,6 +72,8 @@ const Profile = () => {
         setWeight(data.weight || "");
         setHeight(data.height || "");
         setMedicalInfo(data.medical_info || "");
+      } else {
+        console.log("No profile data found for user");
       }
     } catch (error) {
       console.error("Error fetching profile:", error);
