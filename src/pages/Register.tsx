@@ -24,8 +24,9 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Link } from "react-router-dom";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useAuth } from "@/contexts/AuthContext";
-import { AlertCircle, Loader2 } from "lucide-react";
+import { AlertCircle, Loader2, Phone, Weight, Height, Hospital } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Textarea } from "@/components/ui/textarea";
 
 const formSchema = z.object({
   fullName: z.string().min(2, {
@@ -46,6 +47,19 @@ const formSchema = z.object({
   phoneNumber: z.string().min(10, {
     message: "Please enter a valid phone number.",
   }),
+  emergencyContact: z.string().min(10, {
+    message: "Please enter a valid emergency contact number.",
+  }),
+  emergencyContactName: z.string().min(2, {
+    message: "Emergency contact name must be at least 2 characters.",
+  }),
+  weight: z.string().regex(/^[0-9]*\.?[0-9]+$/, {
+    message: "Please enter a valid weight in kg.",
+  }),
+  height: z.string().regex(/^[0-9]*\.?[0-9]+$/, {
+    message: "Please enter a valid height in cm.",
+  }),
+  medicalInfo: z.string().optional(),
   termsAccepted: z.boolean().refine(val => val === true, {
     message: "You must accept the terms and conditions.",
   }),
@@ -62,6 +76,11 @@ const Register = () => {
       email: "",
       password: "",
       phoneNumber: "",
+      emergencyContact: "",
+      emergencyContactName: "",
+      weight: "",
+      height: "",
+      medicalInfo: "",
       termsAccepted: false,
     },
   });
@@ -74,6 +93,11 @@ const Register = () => {
         phone_number: values.phoneNumber,
         blood_type: values.bloodType,
         date_of_birth: values.dateOfBirth,
+        emergency_contact: values.emergencyContact,
+        emergency_contact_name: values.emergencyContactName,
+        weight: values.weight,
+        height: values.height,
+        medical_info: values.medicalInfo,
       };
       
       await signUp(values.email, values.password, userData);
@@ -194,6 +218,109 @@ const Register = () => {
                         <FormLabel>Password</FormLabel>
                         <FormControl>
                           <Input type="password" placeholder="••••••••" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                {/* Emergency Contact Fields */}
+                <div className="space-y-4">
+                  <h3 className="text-lg font-medium">Emergency Contact</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <FormField
+                      control={form.control}
+                      name="emergencyContactName"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Emergency Contact Name</FormLabel>
+                          <FormControl>
+                            <div className="flex items-center">
+                              <Phone className="mr-2 h-4 w-4 text-muted-foreground" />
+                              <Input placeholder="Jane Doe" {...field} />
+                            </div>
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="emergencyContact"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Emergency Contact Number</FormLabel>
+                          <FormControl>
+                            <div className="flex items-center">
+                              <Phone className="mr-2 h-4 w-4 text-muted-foreground" />
+                              <Input placeholder="(123) 456-7890" {...field} />
+                            </div>
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                </div>
+
+                {/* Physical Details */}
+                <div className="space-y-4">
+                  <h3 className="text-lg font-medium">Physical Details</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <FormField
+                      control={form.control}
+                      name="weight"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Weight (kg)</FormLabel>
+                          <FormControl>
+                            <div className="flex items-center">
+                              <Weight className="mr-2 h-4 w-4 text-muted-foreground" />
+                              <Input placeholder="70" {...field} />
+                            </div>
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="height"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Height (cm)</FormLabel>
+                          <FormControl>
+                            <div className="flex items-center">
+                              <Height className="mr-2 h-4 w-4 text-muted-foreground" />
+                              <Input placeholder="175" {...field} />
+                            </div>
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                </div>
+
+                {/* Medical Information */}
+                <div className="space-y-4">
+                  <h3 className="text-lg font-medium">Medical Information</h3>
+                  <FormField
+                    control={form.control}
+                    name="medicalInfo"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Medical Conditions or Allergies (Optional)</FormLabel>
+                        <FormControl>
+                          <div className="flex items-center">
+                            <Hospital className="mr-2 h-4 w-4 text-muted-foreground self-start mt-2" />
+                            <Textarea 
+                              placeholder="List any medical conditions, medications, or allergies here..."
+                              className="resize-none min-h-[100px]"
+                              {...field} 
+                            />
+                          </div>
                         </FormControl>
                         <FormMessage />
                       </FormItem>
