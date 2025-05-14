@@ -1,8 +1,9 @@
 
 import { useState } from "react";
-import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import { Link } from "react-router-dom";
 import {
   Form,
   FormControl,
@@ -11,378 +12,388 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Link } from "react-router-dom";
-import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { useAuth } from "@/contexts/AuthContext";
-import { AlertCircle, Loader2, Phone, Weight, Height, Hospital } from "lucide-react";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Textarea } from "@/components/ui/textarea";
+import { Eye, EyeOff, Mail, Lock, User, Phone, CalendarIcon, Weight, Activity } from "lucide-react";
 
-const formSchema = z.object({
-  fullName: z.string().min(2, {
-    message: "Full name must be at least 2 characters.",
-  }),
+const registerFormSchema = z.object({
   email: z.string().email({
     message: "Please enter a valid email address.",
   }),
   password: z.string().min(8, {
     message: "Password must be at least 8 characters.",
   }),
-  bloodType: z.string({
-    required_error: "Please select a blood type.",
+  full_name: z.string().min(2, {
+    message: "Full name must be at least 2 characters.",
   }),
-  dateOfBirth: z.string({
-    required_error: "Please select your date of birth.",
-  }),
-  phoneNumber: z.string().min(10, {
+  phone_number: z.string().min(10, {
     message: "Please enter a valid phone number.",
   }),
-  emergencyContact: z.string().min(10, {
+  blood_type: z.string().min(1, {
+    message: "Please select your blood type.",
+  }),
+  date_of_birth: z.string().refine(val => !!val, {
+    message: "Please select your date of birth.",
+  }),
+  emergency_contact: z.string().min(10, {
     message: "Please enter a valid emergency contact number.",
   }),
-  emergencyContactName: z.string().min(2, {
-    message: "Emergency contact name must be at least 2 characters.",
+  emergency_contact_name: z.string().min(2, {
+    message: "Please enter emergency contact name.",
   }),
-  weight: z.string().regex(/^[0-9]*\.?[0-9]+$/, {
-    message: "Please enter a valid weight in kg.",
+  weight: z.string().min(1, {
+    message: "Please enter your weight.",
   }),
-  height: z.string().regex(/^[0-9]*\.?[0-9]+$/, {
-    message: "Please enter a valid height in cm.",
+  height: z.string().min(1, {
+    message: "Please enter your height.",
   }),
-  medicalInfo: z.string().optional(),
-  termsAccepted: z.boolean().refine(val => val === true, {
-    message: "You must accept the terms and conditions.",
-  }),
+  medical_info: z.string().optional(),
 });
 
 const Register = () => {
-  const { signUp, isLoading } = useAuth();
-  const [error, setError] = useState<string | null>(null);
-  
-  const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
+  const { signUp } = useAuth();
+  const [isLoading, setIsLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [error, setError] = useState("");
+
+  const form = useForm<z.infer<typeof registerFormSchema>>({
+    resolver: zodResolver(registerFormSchema),
     defaultValues: {
-      fullName: "",
       email: "",
       password: "",
-      phoneNumber: "",
-      emergencyContact: "",
-      emergencyContactName: "",
+      full_name: "",
+      phone_number: "",
+      blood_type: "",
+      date_of_birth: "",
+      emergency_contact: "",
+      emergency_contact_name: "",
       weight: "",
       height: "",
-      medicalInfo: "",
-      termsAccepted: false,
+      medical_info: "",
     },
   });
 
-  async function onSubmit(values: z.infer<typeof formSchema>) {
+  const onSubmit = async (data: z.infer<typeof registerFormSchema>) => {
+    setIsLoading(true);
+    setError("");
+
     try {
-      setError(null);
-      const userData = {
-        full_name: values.fullName,
-        phone_number: values.phoneNumber,
-        blood_type: values.bloodType,
-        date_of_birth: values.dateOfBirth,
-        emergency_contact: values.emergencyContact,
-        emergency_contact_name: values.emergencyContactName,
-        weight: values.weight,
-        height: values.height,
-        medical_info: values.medicalInfo,
-      };
-      
-      await signUp(values.email, values.password, userData);
-    } catch (error: any) {
-      setError(error.message || "An error occurred during registration");
+      await signUp(data.email, data.password, {
+        full_name: data.full_name,
+        phone_number: data.phone_number,
+        blood_type: data.blood_type,
+        date_of_birth: data.date_of_birth,
+        emergency_contact: data.emergency_contact,
+        emergency_contact_name: data.emergency_contact_name,
+        weight: data.weight,
+        height: data.height,
+        medical_info: data.medical_info || "",
+      });
+    } catch (err: any) {
+      setError(err.message || "Registration failed. Please try again.");
+    } finally {
+      setIsLoading(false);
     }
-  }
+  };
 
   return (
-    <div className="py-12">
-      <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8">
-        <Card className="shadow-lg">
-          <CardHeader className="text-center">
-            <CardTitle className="text-2xl text-blood font-semibold">Register as a Blood Donor</CardTitle>
-            <CardDescription>Join our community of lifesavers</CardDescription>
-          </CardHeader>
-          <CardContent>
-            {error && (
-              <Alert variant="destructive" className="mb-6">
-                <AlertCircle className="h-4 w-4" />
-                <AlertDescription>{error}</AlertDescription>
-              </Alert>
-            )}
-            <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <FormField
-                    control={form.control}
-                    name="fullName"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Full Name</FormLabel>
-                        <FormControl>
-                          <Input placeholder="John Doe" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="email"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Email</FormLabel>
-                        <FormControl>
-                          <Input placeholder="name@example.com" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
+    <div className="container max-w-md mx-auto py-12 px-4">
+      <Card className="w-full shadow-lg">
+        <CardHeader className="space-y-1 text-center">
+          <CardTitle className="text-2xl font-bold text-blood">Sign Up</CardTitle>
+          <CardDescription>
+            Create an account to donate blood and save lives
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {error && (
+            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-4">
+              {error}
+            </div>
+          )}
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+              <FormField
+                control={form.control}
+                name="email"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Email</FormLabel>
+                    <FormControl>
+                      <div className="relative">
+                        <Mail className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                        <Input
+                          placeholder="your@email.com"
+                          type="email"
+                          className="pl-10"
+                          {...field}
+                        />
+                      </div>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <FormField
-                    control={form.control}
-                    name="phoneNumber"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Phone Number</FormLabel>
-                        <FormControl>
-                          <Input placeholder="(123) 456-7890" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="dateOfBirth"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Date of Birth</FormLabel>
-                        <FormControl>
-                          <Input type="date" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
+              <FormField
+                control={form.control}
+                name="password"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Password</FormLabel>
+                    <FormControl>
+                      <div className="relative">
+                        <Lock className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                        <Input
+                          placeholder="••••••••"
+                          type={showPassword ? "text" : "password"}
+                          className="pl-10"
+                          {...field}
+                        />
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                          onClick={() => setShowPassword(!showPassword)}
+                        >
+                          {showPassword ? (
+                            <EyeOff className="h-4 w-4 text-muted-foreground" />
+                          ) : (
+                            <Eye className="h-4 w-4 text-muted-foreground" />
+                          )}
+                        </Button>
+                      </div>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <FormField
-                    control={form.control}
-                    name="bloodType"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Blood Type</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select blood type" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            <SelectItem value="A+">A+</SelectItem>
-                            <SelectItem value="A-">A-</SelectItem>
-                            <SelectItem value="B+">B+</SelectItem>
-                            <SelectItem value="B-">B-</SelectItem>
-                            <SelectItem value="AB+">AB+</SelectItem>
-                            <SelectItem value="AB-">AB-</SelectItem>
-                            <SelectItem value="O+">O+</SelectItem>
-                            <SelectItem value="O-">O-</SelectItem>
-                            <SelectItem value="unknown">I don't know</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="password"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Password</FormLabel>
-                        <FormControl>
-                          <Input type="password" placeholder="••••••••" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
+              <FormField
+                control={form.control}
+                name="full_name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Full Name</FormLabel>
+                    <FormControl>
+                      <div className="relative">
+                        <User className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                        <Input
+                          placeholder="John Doe"
+                          className="pl-10"
+                          {...field}
+                        />
+                      </div>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-                {/* Emergency Contact Fields */}
-                <div className="space-y-4">
-                  <h3 className="text-lg font-medium">Emergency Contact</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <FormField
-                      control={form.control}
-                      name="emergencyContactName"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Emergency Contact Name</FormLabel>
-                          <FormControl>
-                            <div className="flex items-center">
-                              <Phone className="mr-2 h-4 w-4 text-muted-foreground" />
-                              <Input placeholder="Jane Doe" {...field} />
-                            </div>
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name="emergencyContact"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Emergency Contact Number</FormLabel>
-                          <FormControl>
-                            <div className="flex items-center">
-                              <Phone className="mr-2 h-4 w-4 text-muted-foreground" />
-                              <Input placeholder="(123) 456-7890" {...field} />
-                            </div>
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-                </div>
+              <FormField
+                control={form.control}
+                name="phone_number"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Phone Number</FormLabel>
+                    <FormControl>
+                      <div className="relative">
+                        <Phone className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                        <Input
+                          placeholder="(123) 456-7890"
+                          className="pl-10"
+                          {...field}
+                        />
+                      </div>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-                {/* Physical Details */}
-                <div className="space-y-4">
-                  <h3 className="text-lg font-medium">Physical Details</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <FormField
-                      control={form.control}
-                      name="weight"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Weight (kg)</FormLabel>
-                          <FormControl>
-                            <div className="flex items-center">
-                              <Weight className="mr-2 h-4 w-4 text-muted-foreground" />
-                              <Input placeholder="70" {...field} />
-                            </div>
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name="height"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Height (cm)</FormLabel>
-                          <FormControl>
-                            <div className="flex items-center">
-                              <Height className="mr-2 h-4 w-4 text-muted-foreground" />
-                              <Input placeholder="175" {...field} />
-                            </div>
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-                </div>
-
-                {/* Medical Information */}
-                <div className="space-y-4">
-                  <h3 className="text-lg font-medium">Medical Information</h3>
-                  <FormField
-                    control={form.control}
-                    name="medicalInfo"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Medical Conditions or Allergies (Optional)</FormLabel>
-                        <FormControl>
-                          <div className="flex items-center">
-                            <Hospital className="mr-2 h-4 w-4 text-muted-foreground self-start mt-2" />
-                            <Textarea 
-                              placeholder="List any medical conditions, medications, or allergies here..."
-                              className="resize-none min-h-[100px]"
-                              {...field} 
-                            />
-                          </div>
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-
+              <div className="grid grid-cols-2 gap-4">
                 <FormField
                   control={form.control}
-                  name="termsAccepted"
+                  name="blood_type"
                   render={({ field }) => (
-                    <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                    <FormItem>
+                      <FormLabel>Blood Type</FormLabel>
                       <FormControl>
-                        <Checkbox
-                          checked={field.value}
-                          onCheckedChange={field.onChange}
-                        />
+                        <select
+                          className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                          {...field}
+                        >
+                          <option value="">Select</option>
+                          <option value="A+">A+</option>
+                          <option value="A-">A-</option>
+                          <option value="B+">B+</option>
+                          <option value="B-">B-</option>
+                          <option value="AB+">AB+</option>
+                          <option value="AB-">AB-</option>
+                          <option value="O+">O+</option>
+                          <option value="O-">O-</option>
+                        </select>
                       </FormControl>
-                      <div className="space-y-1 leading-none">
-                        <FormLabel>
-                          I agree to the{" "}
-                          <Link to="/terms" className="text-blood hover:underline">
-                            Terms of Service
-                          </Link>{" "}
-                          and{" "}
-                          <Link to="/privacy" className="text-blood hover:underline">
-                            Privacy Policy
-                          </Link>
-                        </FormLabel>
-                        <FormMessage />
-                      </div>
+                      <FormMessage />
                     </FormItem>
                   )}
                 />
 
-                <Button 
-                  type="submit" 
-                  className="w-full bg-blood hover:bg-blood-hover"
-                  disabled={isLoading}
-                >
-                  {isLoading ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" /> 
-                      Registering...
-                    </>
-                  ) : (
-                    "Register"
+                <FormField
+                  control={form.control}
+                  name="date_of_birth"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Date of Birth</FormLabel>
+                      <FormControl>
+                        <div className="relative">
+                          <CalendarIcon className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                          <Input
+                            type="date"
+                            className="pl-10"
+                            {...field}
+                          />
+                        </div>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
                   )}
-                </Button>
-              </form>
-            </Form>
-          </CardContent>
-          <CardFooter className="text-center">
-            <div className="text-sm w-full">
-              Already have an account?{" "}
-              <Link to="/login" className="text-blood hover:underline">
-                Login
-              </Link>
-            </div>
-          </CardFooter>
-        </Card>
-      </div>
+                />
+              </div>
+
+              <FormField
+                control={form.control}
+                name="emergency_contact_name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Emergency Contact Name</FormLabel>
+                    <FormControl>
+                      <div className="relative">
+                        <User className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                        <Input
+                          placeholder="Jane Doe"
+                          className="pl-10"
+                          {...field}
+                        />
+                      </div>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="emergency_contact"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Emergency Contact Number</FormLabel>
+                    <FormControl>
+                      <div className="relative">
+                        <Phone className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                        <Input
+                          placeholder="(123) 456-7890"
+                          className="pl-10"
+                          {...field}
+                        />
+                      </div>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <div className="grid grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="weight"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Weight (kg)</FormLabel>
+                      <FormControl>
+                        <div className="relative">
+                          <Weight className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                          <Input
+                            placeholder="70"
+                            className="pl-10"
+                            {...field}
+                          />
+                        </div>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="height"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Height (cm)</FormLabel>
+                      <FormControl>
+                        <div className="relative">
+                          <Activity className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                          <Input
+                            placeholder="170"
+                            className="pl-10"
+                            {...field}
+                          />
+                        </div>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              <FormField
+                control={form.control}
+                name="medical_info"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Medical Information (Optional)</FormLabel>
+                    <FormControl>
+                      <textarea
+                        className="flex min-h-20 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                        placeholder="Any relevant medical conditions, allergies, etc."
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <Button
+                type="submit"
+                className="w-full bg-blood hover:bg-blood-hover"
+                disabled={isLoading}
+              >
+                {isLoading ? "Creating Account..." : "Create Account"}
+              </Button>
+            </form>
+          </Form>
+        </CardContent>
+        <CardFooter className="flex justify-center">
+          <p className="text-sm text-muted-foreground">
+            Already have an account?{" "}
+            <Link to="/login" className="text-blood hover:underline">
+              Login
+            </Link>
+          </p>
+        </CardFooter>
+      </Card>
     </div>
   );
 };

@@ -80,21 +80,21 @@ const HostCamp = () => {
       setIsSubmitting(true);
       setError(null);
 
-      const campData = {
-        name: values.campName,
-        organizer: values.organizer,
-        location: values.location,
-        date: values.date,
-        start_time: values.startTime,
-        end_time: values.endTime,
-        contact_number: values.contactNumber,
-        description: values.description,
-        requirements: values.requirements || "",
-        user_id: user.id,
-        status: "pending",
-      };
-
-      const { error: insertError } = await supabase.from("blood_donation_camps").insert(campData);
+      const { error: insertError } = await supabase
+        .from("blood_donation_camps")
+        .insert({
+          name: values.campName,
+          organizer: values.organizer,
+          location: values.location,
+          date: values.date,
+          start_time: values.startTime,
+          end_time: values.endTime,
+          contact_number: values.contactNumber,
+          description: values.description,
+          requirements: values.requirements || "",
+          user_id: user.id,
+          status: "pending",
+        });
 
       if (insertError) throw insertError;
 
@@ -127,7 +127,7 @@ const HostCamp = () => {
                 </Alert>
               )}
               {!user && (
-                <Alert variant="warning" className="mb-6">
+                <Alert variant="default" className="mb-6 bg-yellow-50 border-yellow-200">
                   <AlertCircle className="h-4 w-4" />
                   <AlertDescription>
                     You must be logged in to host a blood donation camp.{" "}

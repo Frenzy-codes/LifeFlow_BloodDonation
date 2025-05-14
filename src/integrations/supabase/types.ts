@@ -42,6 +42,57 @@ export type Database = {
         }
         Relationships: []
       }
+      blood_donation_camps: {
+        Row: {
+          contact_number: string
+          created_at: string | null
+          date: string
+          description: string
+          end_time: string
+          id: string
+          location: string
+          name: string
+          organizer: string
+          requirements: string | null
+          start_time: string
+          status: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          contact_number: string
+          created_at?: string | null
+          date: string
+          description: string
+          end_time: string
+          id?: string
+          location: string
+          name: string
+          organizer: string
+          requirements?: string | null
+          start_time: string
+          status?: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          contact_number?: string
+          created_at?: string | null
+          date?: string
+          description?: string
+          end_time?: string
+          id?: string
+          location?: string
+          name?: string
+          organizer?: string
+          requirements?: string | null
+          start_time?: string
+          status?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       blood_requests: {
         Row: {
           additional_info: string | null
@@ -126,30 +177,45 @@ export type Database = {
           created_at: string | null
           date_of_birth: string | null
           email: string | null
+          emergency_contact: string | null
+          emergency_contact_name: string | null
           full_name: string | null
+          height: string | null
           id: string
+          medical_info: string | null
           phone_number: string | null
           updated_at: string | null
+          weight: string | null
         }
         Insert: {
           blood_type?: string | null
           created_at?: string | null
           date_of_birth?: string | null
           email?: string | null
+          emergency_contact?: string | null
+          emergency_contact_name?: string | null
           full_name?: string | null
+          height?: string | null
           id: string
+          medical_info?: string | null
           phone_number?: string | null
           updated_at?: string | null
+          weight?: string | null
         }
         Update: {
           blood_type?: string | null
           created_at?: string | null
           date_of_birth?: string | null
           email?: string | null
+          emergency_contact?: string | null
+          emergency_contact_name?: string | null
           full_name?: string | null
+          height?: string | null
           id?: string
+          medical_info?: string | null
           phone_number?: string | null
           updated_at?: string | null
+          weight?: string | null
         }
         Relationships: []
       }
