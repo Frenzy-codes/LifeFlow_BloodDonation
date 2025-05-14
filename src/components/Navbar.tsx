@@ -29,6 +29,7 @@ const Navbar = () => {
               <Link to="/banks" className="text-gray-700 hover:text-blood px-3 py-2 text-sm font-medium">Blood Banks</Link>
               <Link to="/appointments" className="text-gray-700 hover:text-blood px-3 py-2 text-sm font-medium">Appointments</Link>
               <Link to="/request" className="text-gray-700 hover:text-blood px-3 py-2 text-sm font-medium">Request Blood</Link>
+              <Link to="/host-camp" className="text-gray-700 hover:text-blood px-3 py-2 text-sm font-medium">Host Camp</Link>
             </div>
           </div>
           <div className="hidden md:flex items-center gap-4">
@@ -110,6 +111,13 @@ const Navbar = () => {
             onClick={() => setIsOpen(false)}
           >
             Request Blood
+          </Link>
+          <Link 
+            to="/host-camp" 
+            className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-blood hover:bg-gray-50"
+            onClick={() => setIsOpen(false)}
+          >
+            Host Camp
           </Link>
           <div className="pt-4 flex flex-col space-y-3">
             {user ? (
