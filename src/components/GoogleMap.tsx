@@ -31,27 +31,44 @@ const GoogleMap: React.FC<GoogleMapProps> = ({
   const [map, setMap] = useState<any | null>(null);
   const [infoWindow, setInfoWindow] = useState<any | null>(null);
   const [isLoaded, setIsLoaded] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
+  // Check if Google Maps API is loaded
   useEffect(() => {
-    // Check if Google Maps API is loaded
-    if (!window.google) {
+    if (!window.google || !window.google.maps) {
       const loadTimer = setInterval(() => {
-        if (window.google) {
+        console.log("Checking if Google Maps API is loaded...");
+        if (window.google && window.google.maps) {
+          console.log("Google Maps API loaded successfully!");
           setIsLoaded(true);
           clearInterval(loadTimer);
         }
-      }, 100);
+      }, 1000);
       
-      return () => clearInterval(loadTimer);
+      // Set a timeout to stop checking after 10 seconds
+      setTimeout(() => {
+        clearInterval(loadTimer);
+        if (!isLoaded) {
+          console.error("Google Maps API failed to load within timeout");
+          setLoadError("Google Maps API failed to load. Please check your internet connection and try again.");
+        }
+      }, 10000);
+      
+      return () => {
+        clearInterval(loadTimer);
+      };
     } else {
+      console.log("Google Maps API was already loaded!");
       setIsLoaded(true);
     }
   }, []);
 
+  // Initialize map when API is loaded and component is mounted
   useEffect(() => {
     if (!mapRef.current || !isLoaded) return;
 
     try {
+      console.log("Initializing Google Map...");
       const mapInstance = new window.google.maps.Map(mapRef.current, {
         center,
         zoom,
@@ -66,8 +83,10 @@ const GoogleMap: React.FC<GoogleMapProps> = ({
 
       setMap(mapInstance);
       setInfoWindow(new window.google.maps.InfoWindow());
+      console.log("Google Map initialized successfully!");
     } catch (error) {
       console.error("Error initializing Google Map:", error);
+      setLoadError(`Failed to initialize map: ${error instanceof Error ? error.message : String(error)}`);
     }
 
     return () => {
@@ -76,6 +95,7 @@ const GoogleMap: React.FC<GoogleMapProps> = ({
     };
   }, [mapRef, isLoaded, center, zoom]);
 
+  // Handle markers when map is ready
   useEffect(() => {
     if (!map || !infoWindow || !isLoaded) return;
 
@@ -110,12 +130,42 @@ const GoogleMap: React.FC<GoogleMapProps> = ({
   }, [map, markers, center, infoWindow, onMarkerClick, isLoaded]);
 
   return (
-    <div ref={mapRef} style={{ height, width: "100%" }} className="rounded-md">
-      {!isLoaded && (
-        <div className="flex items-center justify-center h-full bg-gray-100 rounded-md">
-          <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blood"></div>
-        </div>
-      )}
+    <div className="relative">
+      <div 
+        ref={mapRef} 
+        style={{ height, width: "100%" }} 
+        className="rounded-md"
+      >
+        {!isLoaded && !loadError && (
+          <div className="flex items-center justify-center h-full bg-gray-100 rounded-md">
+            <div className="flex flex-col items-center">
+              <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blood mb-2"></div>
+              <p className="text-sm text-gray-600">Loading Google Maps...</p>
+            </div>
+          </div>
+        )}
+        
+        {loadError && (
+          <div className="flex items-center justify-center h-full bg-gray-100 rounded-md p-4">
+            <div className="flex flex-col items-center text-center">
+              <div className="text-red-500 mb-2">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <line x1="12" y1="8" x2="12" y2="12"></line>
+                  <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                </svg>
+              </div>
+              <p className="text-red-600">{loadError}</p>
+              <button 
+                className="mt-4 px-4 py-2 bg-blood text-white rounded-md hover:bg-blood-hover"
+                onClick={() => window.location.reload()}
+              >
+                Reload Page
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 };
