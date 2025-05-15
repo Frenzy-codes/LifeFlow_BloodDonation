@@ -2,8 +2,9 @@
  
 This project is built with: 
 
-- Vite
-- TypeScript
+- JavaScript
 - React
-- shadcn-ui
+- Google Maps API
 - Tailwind CSS
+
+  Superbase (Backend)
