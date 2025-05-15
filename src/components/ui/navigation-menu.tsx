@@ -1,7 +1,9 @@
+
 import * as React from "react"
 import * as NavigationMenuPrimitive from "@radix-ui/react-navigation-menu"
 import { cva } from "class-variance-authority"
 import { ChevronDown } from "lucide-react"
+import { Link } from "react-router-dom"
 
 import { cn } from "@/lib/utils"
 
@@ -77,7 +79,19 @@ const NavigationMenuContent = React.forwardRef<
 ))
 NavigationMenuContent.displayName = NavigationMenuPrimitive.Content.displayName
 
-const NavigationMenuLink = NavigationMenuPrimitive.Link
+// Custom NavigationMenuLink that can use React Router Link
+const NavigationMenuLink = React.forwardRef<
+  HTMLAnchorElement,
+  React.ComponentPropsWithoutRef<typeof Link> & { asChild?: boolean }
+>(({ className, asChild, to, ...props }, ref) => {
+  const Comp = asChild ? React.Fragment : Link;
+  const linkProps = asChild ? {} : { to, ref, className };
+  
+  return (
+    <Comp {...linkProps} {...props} />
+  );
+});
+NavigationMenuLink.displayName = "NavigationMenuLink";
 
 const NavigationMenuViewport = React.forwardRef<
   React.ElementRef<typeof NavigationMenuPrimitive.Viewport>,
