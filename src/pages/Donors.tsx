@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -15,6 +15,7 @@ import { Search } from "lucide-react";
 const Donors = () => {
   const [bloodType, setBloodType] = useState("");
   const [location, setLocation] = useState("");
+  const [filteredDonors, setFilteredDonors] = useState<any[]>([]);
 
   // Indian donor data
   const indianDonors = [
@@ -74,6 +75,30 @@ const Donors = () => {
     },
   ];
 
+  // Initialize filteredDonors with all donors when component loads
+  useEffect(() => {
+    setFilteredDonors(indianDonors);
+  }, []);
+
+  // Search function
+  const handleSearch = () => {
+    let results = [...indianDonors];
+    
+    // Filter by blood type if selected
+    if (bloodType) {
+      results = results.filter(donor => donor.bloodType === bloodType);
+    }
+    
+    // Filter by location if entered (case insensitive partial match)
+    if (location) {
+      results = results.filter(donor => 
+        donor.location.toLowerCase().includes(location.toLowerCase())
+      );
+    }
+    
+    setFilteredDonors(results);
+  };
+
   return (
     <div className="py-12">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -115,7 +140,7 @@ const Donors = () => {
                   onChange={(e) => setLocation(e.target.value)}
                 />
               </div>
-              <Button className="bg-blood hover:bg-blood-hover">
+              <Button className="bg-blood hover:bg-blood-hover" onClick={handleSearch}>
                 <Search className="h-4 w-4 mr-2" /> Search
               </Button>
             </div>
@@ -123,44 +148,51 @@ const Donors = () => {
         </Card>
         
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {indianDonors.map((donor) => (
-            <Card key={donor.id} className={`shadow-md hover:shadow-lg transition-shadow ${!donor.available && 'opacity-60'}`}>
-              <CardHeader className="pb-2">
-                <div className="flex justify-between items-center">
-                  <CardTitle className="text-xl font-semibold">{donor.name}</CardTitle>
-                  <span className="text-lg font-bold px-3 py-1 bg-red-100 text-blood rounded-full">
-                    {donor.bloodType}
-                  </span>
-                </div>
-                <CardDescription>{donor.location}</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-500">Last Donation:</span>
-                    <span className="font-medium">{donor.lastDonation}</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-500">Total Donations:</span>
-                    <span className="font-medium">{donor.donationCount}</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-500">Status:</span>
-                    <span className={`font-medium ${donor.available ? 'text-green-600' : 'text-red-600'}`}>
-                      {donor.available ? 'Available' : 'Unavailable'}
+          {filteredDonors.length > 0 ? (
+            filteredDonors.map((donor) => (
+              <Card key={donor.id} className={`shadow-md hover:shadow-lg transition-shadow ${!donor.available && 'opacity-60'}`}>
+                <CardHeader className="pb-2">
+                  <div className="flex justify-between items-center">
+                    <CardTitle className="text-xl font-semibold">{donor.name}</CardTitle>
+                    <span className="text-lg font-bold px-3 py-1 bg-red-100 text-blood rounded-full">
+                      {donor.bloodType}
                     </span>
                   </div>
-                  <Button 
-                    className="w-full mt-4" 
-                    variant={donor.available ? "default" : "outline"}
-                    disabled={!donor.available}
-                  >
-                    {donor.available ? 'Contact Donor' : 'Currently Unavailable'}
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+                  <CardDescription>{donor.location}</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-2">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-500">Last Donation:</span>
+                      <span className="font-medium">{donor.lastDonation}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-500">Total Donations:</span>
+                      <span className="font-medium">{donor.donationCount}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-500">Status:</span>
+                      <span className={`font-medium ${donor.available ? 'text-green-600' : 'text-red-600'}`}>
+                        {donor.available ? 'Available' : 'Unavailable'}
+                      </span>
+                    </div>
+                    <Button 
+                      className="w-full mt-4" 
+                      variant={donor.available ? "default" : "outline"}
+                      disabled={!donor.available}
+                    >
+                      {donor.available ? 'Contact Donor' : 'Currently Unavailable'}
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            ))
+          ) : (
+            <div className="col-span-1 md:col-span-2 lg:col-span-3 text-center py-8">
+              <h3 className="text-xl font-medium text-gray-700">No donors match your search criteria</h3>
+              <p className="text-gray-500 mt-2">Try adjusting your filters or search for a different blood type</p>
+            </div>
+          )}
         </div>
       </div>
     </div>

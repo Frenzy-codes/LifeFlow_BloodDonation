@@ -30,7 +30,7 @@ const Hero = () => {
               <div className="mt-5 sm:mt-8 sm:flex sm:justify-center lg:justify-start">
                 <div className="rounded-md shadow">
                   <Button className="w-full flex items-center justify-center px-8 py-3 text-base font-medium rounded-md text-white bg-blood hover:bg-blood-hover md:py-4 md:text-lg md:px-10" asChild>
-                    <Link to="/register">
+                    <Link to="/appointments">
                       <Droplet className="mr-2 h-5 w-5" />
                       Become a Donor
                     </Link>

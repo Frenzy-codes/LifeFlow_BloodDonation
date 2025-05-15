@@ -48,7 +48,7 @@ const formSchema = z.object({
   urgency: z.string({
     required_error: "Please select urgency level.",
   }),
-  isSubscription: z.boolean().default(false),
+  isRecurring: z.boolean().default(false),
   subscriptionFrequency: z.string().optional(),
   additionalInfo: z.string().optional(),
 });
@@ -71,13 +71,13 @@ const RequestBloodForm = () => {
       contactNumber: "",
       unitsNeeded: "1",
       hospital: "",
-      isSubscription: false,
+      isRecurring: false,
       additionalInfo: "",
     },
   });
 
   // Watch for subscription checkbox changes
-  const isSubscription = form.watch("isSubscription");
+  const isRecurring = form.watch("isRecurring");
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     if (!user) {
@@ -86,7 +86,19 @@ const RequestBloodForm = () => {
     }
     
     try {
-      // Using type assertion to fix type error
+      console.log("Submitting blood request:", {
+        user_id: user.id,
+        full_name: values.fullName,
+        contact_number: values.contactNumber,
+        blood_type: values.bloodType,
+        units_needed: parseInt(values.unitsNeeded),
+        hospital: values.hospital,
+        urgency: values.urgency,
+        additional_info: values.additionalInfo,
+        status: "Pending"
+      });
+
+      // Only include non-null fields to match database schema
       const { error } = await supabase
         .from("blood_requests")
         .insert({
@@ -97,16 +109,17 @@ const RequestBloodForm = () => {
           units_needed: parseInt(values.unitsNeeded),
           hospital: values.hospital,
           urgency: values.urgency,
-          is_subscription: values.isSubscription,
-          subscription_frequency: values.subscriptionFrequency,
-          additional_info: values.additionalInfo,
+          additional_info: values.additionalInfo || null,
           status: "Pending"
-        } as any);
+        });
       
-      if (error) throw error;
+      if (error) {
+        console.error("Error details:", error);
+        throw error;
+      }
       
       toast.success("Blood request submitted successfully!", {
-        description: values.isSubscription 
+        description: values.isRecurring 
           ? "We've registered your recurring blood need." 
           : "We will notify matching donors about your request.",
       });
@@ -242,7 +255,7 @@ const RequestBloodForm = () => {
             <div className="bg-gray-50 p-4 rounded-md border">
               <FormField
                 control={form.control}
-                name="isSubscription"
+                name="isRecurring"
                 render={({ field }) => (
                   <FormItem className="flex flex-row items-start space-x-3 space-y-0 mb-4">
                     <FormControl>
@@ -261,7 +274,7 @@ const RequestBloodForm = () => {
                 )}
               />
 
-              {isSubscription && (
+              {isRecurring && (
                 <FormField
                   control={form.control}
                   name="subscriptionFrequency"
@@ -299,7 +312,7 @@ const RequestBloodForm = () => {
                   <FormLabel>Additional Information</FormLabel>
                   <FormControl>
                     <Textarea
-                      placeholder={isSubscription 
+                      placeholder={isRecurring 
                         ? "Any details about the recurring blood need, specific dates, or special requirements..."
                         : "Any additional details that might be relevant..."}
                       className="resize-none"
